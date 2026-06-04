@@ -7,6 +7,11 @@
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
+[![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
+
+> **当前版本**: v0.1.0-alpha — 本地 MVP。
+> **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
+> 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
 
 ---
 
@@ -25,6 +30,12 @@ ExplainLens 是一个开源工具，它像一位 AI 教学导演，能够：
 
 每张卡片包含：标题、简明解释、视觉隐喻、卡通画面描述、图片 prompt、takeaway、原文来源片段。
 
+## 截图
+
+_Screenshot coming soon_
+
+运行 `outputs/sample_run/cards.html` 可在浏览器中看到 8 张带 SVG 占位图的解释卡。
+
 ## 功能特性
 
 - 📖 **文本解析** — 支持 `.txt` 和 `.md` 文件
@@ -39,26 +50,33 @@ ExplainLens 是一个开源工具，它像一位 AI 教学导演，能够：
 ## 安装
 
 ```bash
-git clone https://github.com/explainlens/explainlens.git
+git clone https://github.com/conanxin/explainlens.git
 cd explainlens
-pip install -e .
-```
-
-或仅安装运行依赖：
-
-```bash
-pip install jinja2 pydantic
+python -m venv .venv
+source .venv/bin/activate   # Linux / macOS
+# 或 .venv\Scripts\activate  # Windows
+pip install -e ".[dev]"
 ```
 
 ## 快速开始
 
 ```bash
+# 运行示例
 python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/sample_run
+
+# 或用安装后的 CLI 命令
+explainlens analyze \
   --input examples/sample_article.txt \
   --output outputs/sample_run
 ```
 
 然后用浏览器打开 `outputs/sample_run/cards.html` 预览结果。
+
+## 快速开始（详细版）
+
+详见 [docs/QUICKSTART.md](docs/QUICKSTART.md)。
 
 ## 输出文件
 
@@ -79,7 +97,7 @@ python -m explainlens.cli analyze \
 ## 运行测试
 
 ```bash
-pip install pytest
+pip install -e ".[dev]"
 python -m pytest
 ```
 
@@ -101,7 +119,9 @@ explainlens/
 ├── tests/              # 测试
 ├── examples/           # 示例输入
 ├── docs/               # 文档
-└── outputs/            # 输出目录
+├── scripts/            # 工具脚本
+├── .github/            # GitHub Actions CI
+└── outputs/            # 输出目录（gitignore）
 ```
 
 ## 路线图
@@ -114,6 +134,14 @@ explainlens/
 - **Phase 4** 真实图片生成适配器
 - **Phase 5** Web UI
 - **Phase 6** 长图/PPT/视频导出
+
+## 常见问题
+
+详见 [docs/FAQ.md](docs/FAQ.md)。
+
+## 版本历史
+
+详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 贡献
 
