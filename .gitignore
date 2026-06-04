@@ -39,6 +39,15 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
+# Project-local workbuddy (not the user's global one)
+.workbuddy/
+
+# Node
+node_modules/
+
+# Test cache
+.pytest_cache/
+
 # Temporary
 *.tmp
 *.bak
