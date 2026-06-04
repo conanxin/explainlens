@@ -7,7 +7,7 @@ name = "explainlens"
 version = "0.1.0"
 description = "Turn papers and complex texts into visual explainer cards and cartoon storyboards."
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
     {name = "ExplainLens Contributors"}

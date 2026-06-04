@@ -67,6 +67,9 @@ def main() -> int:
     all_pass &= check("README.md has correct GitHub URL",
                       file_contains("README.md", r"conanxin/explainlens"),
                       "README must reference conanxin/explainlens")
+    all_pass &= check("README.md does NOT have wrong GitHub URL",
+                      not file_contains("README.md", r"github\.com/explainlens/explainlens"),
+                      "README must NOT reference explainlens/explainlens")
     all_pass &= check("LICENSE exists", file_exists("LICENSE"))
     all_pass &= check("CHANGELOG.md exists", file_exists("CHANGELOG.md"))
     all_pass &= check("docs/QUICKSTART.md exists", file_exists("docs/QUICKSTART.md"))
@@ -119,6 +122,9 @@ def main() -> int:
                       file_exists("examples/sample_article.txt"))
     all_pass &= check("sample_paper_excerpt.txt exists",
                       file_exists("examples/sample_paper_excerpt.txt"))
+    all_pass &= check("outputs/.gitkeep exists",
+                      file_exists("outputs/.gitkeep"),
+                      "outputs/.gitkeep should be tracked to preserve the output directory")
     print()
 
     # --- CI ---
