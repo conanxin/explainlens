@@ -114,6 +114,31 @@ start outputs/pdf_demo/cards.html
 
 PDF 输出会额外包含 `source_pages.json`，且每张卡片会显示来源页码和可点击的 citations。打开 `cards.html` 并点击 source citation 即可跳转到页面底部的 Source Appendix。
 
+## 9. 试用 mock-llm provider
+
+```bash
+# 使用 mock-llm provider 分析文本
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/mock_run \
+  --provider mock-llm
+
+# 预览结果
+start outputs/mock_run/cards.html
+```
+
+mock-llm provider 使用更自然的叙事语言生成教学计划和概念分析，但完全不调用外部 API。它用于测试 provider 接口的设计，并为未来接入真实 LLM 提供测试框架。
+
+打开 `run_summary.json` 可以看到 provider 元数据：
+
+```json
+{
+  "provider": "mock-llm",
+  "provider_version": "mock-llm-v0.1",
+  "uses_external_api": false
+}
+```
+
 ---
 
 ## 了解更多

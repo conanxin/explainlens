@@ -87,6 +87,7 @@ def main() -> int:
     all_pass &= check("docs/SECURITY.md exists", file_exists("docs/SECURITY.md"))
     all_pass &= check("docs/ROADMAP.md exists", file_exists("docs/ROADMAP.md"))
     all_pass &= check("docs/DEMO.md exists", file_exists("docs/DEMO.md"))
+    all_pass &= check("docs/PROVIDERS.md exists", file_exists("docs/PROVIDERS.md"))
     all_pass &= check("docs/assets/demo-preview.svg exists",
                       file_exists("docs/assets/demo-preview.svg"))
     print()
@@ -107,6 +108,10 @@ def main() -> int:
                       file_contains(".gitignore", r"__pycache__"))
     all_pass &= check(".gitignore covers outputs/*/",
                       file_contains(".gitignore", r"outputs/\*/"))
+    all_pass &= check(".env.example exists", file_exists(".env.example"))
+    all_pass &= check(".env.example has no real API key",
+                      not file_contains(".env.example", r"sk-[a-zA-Z0-9]{20,}"),
+                      ".env.example must not contain real API keys")
     print()
 
     # --- Security ---
@@ -185,6 +190,42 @@ def main() -> int:
                       file_contains(".github/workflows/ci.yml",
                                     r"source-chunk_"),
                       "CI must verify source-chunk anchors in cards.html")
+    print()
+
+    # --- Provider Interface ---
+    print(">>> Provider Interface")
+    all_pass &= check("src/explainlens/providers/base.py exists",
+                      file_exists("src/explainlens/providers/base.py"),
+                      "Provider base class must exist")
+    all_pass &= check("src/explainlens/providers/rule_based.py exists",
+                      file_exists("src/explainlens/providers/rule_based.py"),
+                      "rule-based provider must exist")
+    all_pass &= check("src/explainlens/providers/mock_llm.py exists",
+                      file_exists("src/explainlens/providers/mock_llm.py"),
+                      "mock-llm provider must exist")
+    all_pass &= check("src/explainlens/providers/registry.py exists",
+                      file_exists("src/explainlens/providers/registry.py"),
+                      "Provider registry must exist")
+    all_pass &= check("README contains --provider mock-llm",
+                      file_contains("README.md", r"--provider mock-llm"),
+                      "README must document mock-llm usage")
+    all_pass &= check("docs/PROVIDERS.md exists",
+                      file_exists("docs/PROVIDERS.md"),
+                      "Provider documentation must exist")
+    all_pass &= check(".env.example exists",
+                      file_exists(".env.example"),
+                      ".env.example must exist")
+    all_pass &= check(".env.example has no real API key",
+                      not file_contains(".env.example", r"sk-[a-zA-Z0-9]{20,}"),
+                      ".env.example must not contain real API keys")
+    all_pass &= check("CI has mock provider smoke test",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"--provider mock-llm"),
+                      "CI must include a mock-llm smoke test")
+    all_pass &= check("CI checks uses_external_api: false",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"uses_external_api.*false"),
+                      "CI must verify uses_external_api is false")
     print()
 
     # --- CI ---

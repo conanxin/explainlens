@@ -42,16 +42,27 @@
 - [x] Card-source link builder (`build_card_source_links`)
 - [x] Renderer uses explicit data structures (no Pydantic attribute hacks)
 
-## Phase 3: LLM Plugin Interface
+## Phase 3: LLM Adapter Interface with Mock Provider
 
-**Planned**
+**Status: Complete**
 
-- [ ] Abstract LLM interface with pluggable backends
-- [ ] OpenAI API adapter
-- [ ] Local model adapter (ollama, llama.cpp)
-- [ ] Improved concept extraction using LLM
-- [ ] Better explanation generation
-- [ ] Keep rule-based fallback for offline use
+- [x] Abstract provider base class (`ExplainProvider`)
+- [x] `rule-based` provider wrapping existing heuristic pipeline
+- [x] `mock-llm` provider simulating future LLM output (no API calls)
+- [x] Provider registry with clear error messages
+- [x] `--provider` CLI parameter
+- [x] Provider metadata in `run_summary.json` (provider, provider_version, uses_external_api)
+- [x] Provider documentation (`docs/PROVIDERS.md`)
+- [x] All output files preserved across providers
+- [x] Source citations preserved across providers
+- [x] No external AI SDK dependencies added
+
+### Remaining for Phase 3.x
+
+- [ ] `openai` provider — real OpenAI API adapter
+- [ ] `local` provider — Ollama / llama.cpp adapter
+- [ ] `custom` provider — user-defined API endpoint
+- [ ] Provider configuration via environment variables
 
 ## Phase 4: Real Image Generation Adapter
 

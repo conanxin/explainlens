@@ -2,6 +2,8 @@
 
 Usage:
     python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run
+    python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run --provider rule-based
+    python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/mock_run --provider mock-llm
     python -m explainlens.cli analyze --input examples/sample_paper.pdf --output outputs/pdf_demo
 """
 
@@ -21,13 +23,11 @@ if hasattr(sys.stderr, "reconfigure"):
 
 from explainlens.parser import parse_text, parse_pdf, detect_source_type, ParseError
 from explainlens.chunker import chunk_text
-from explainlens.analyzer import analyze
-from explainlens.planner import create_teaching_plan
-from explainlens.storyboard import create_storyboard
 from explainlens.renderer import create_cards_from_storyboard, render_cards_html
 from explainlens.exporters import write_json, write_text, export_cards_markdown
 from explainlens.schemas import RunSummary, SourcePage
 from explainlens.source_index import build_source_index, build_source_quality
+from explainlens.providers import get_provider
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
@@ -73,39 +73,43 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     print(f"   -> Created {len(chunks)} chunks")
     write_json([c.model_dump() for c in chunks], output_dir / "source_chunks.json")
 
-    # 3. Analyze
-    concept_map = analyze(chunks)
+    # 3. Initialize provider
+    provider = get_provider(args.provider)
+    print(f"   -> Provider: {provider.name} ({provider.version})")
+
+    # 4. Analyze — concept map
+    concept_map = provider.build_concept_map(chunks)
     print(f"   -> Extracted {len(concept_map.key_concepts)} key concepts, "
           f"{len(concept_map.key_claims)} claims")
     write_json(concept_map, output_dir / "concept_map.json")
 
-    # 4. Teaching plan
-    teaching_plan = create_teaching_plan(concept_map, chunks)
+    # 5. Teaching plan
+    teaching_plan = provider.build_teaching_plan(chunks, concept_map)
     print(f"   -> Created {len(teaching_plan.steps)} teaching steps")
     write_json(teaching_plan, output_dir / "teaching_plan.json")
 
-    # 5. Storyboard
-    storyboard = create_storyboard(teaching_plan, concept_map, chunks)
+    # 6. Storyboard
+    storyboard = provider.build_storyboard(chunks, concept_map, teaching_plan)
     print(f"   -> Created {len(storyboard.panels)} storyboard panels")
     write_json(storyboard, output_dir / "storyboard.json")
 
-    # 6. Image prompts
+    # 7. Image prompts
     image_prompts = [
         {"panel_id": p.panel_id, "title": p.title, "prompt": p.image_prompt}
         for p in storyboard.panels
     ]
     write_json(image_prompts, output_dir / "image_prompts.json")
 
-    # 7. Cards
-    cards = create_cards_from_storyboard(storyboard)
+    # 8. Cards
+    cards = provider.build_cards(storyboard)
     print(f"   -> Created {len(cards)} explainer cards")
     write_json([c.model_dump() for c in cards], output_dir / "cards.json")
 
-    # 8. Export Markdown
+    # 9. Export Markdown
     cards_md = export_cards_markdown(cards, chunks=chunks)
     write_text(cards_md, output_dir / "cards.md")
 
-    # 9. Export HTML
+    # 10. Export HTML
     cards_html = render_cards_html(
         cards,
         input_title=input_path.name,
@@ -114,7 +118,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     )
     write_text(cards_html, output_dir / "cards.html")
 
-    # 9b. Source index (cross-references for citation UX)
+    # 10b. Source index (cross-references for citation UX)
     source_index = build_source_index(
         chunks=chunks,
         cards=cards,
@@ -124,7 +128,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     )
     write_json(source_index, output_dir / "source_index.json")
 
-    # 10. Run summary
+    # 11. Run summary
     output_files = [
         "source_chunks.json",
         "source_index.json",
@@ -156,6 +160,9 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         card_count=len(cards),
         output_files=output_files,
         extraction_method="pymupdf" if source_type == "pdf" else "built-in",
+        provider=provider.name,
+        provider_version=provider.version,
+        uses_external_api=provider.uses_external_api,
         warnings=warnings,
         source_quality=source_quality,
     )
@@ -164,6 +171,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     # Summary
     print()
     print("ExplainLens run complete")
+    print(f"  Provider:     {provider.name}")
     print(f"  Input type:   {source_type}")
     if source_type == "pdf":
         print(f"  Pages:        {len(pages)}")
@@ -194,6 +202,12 @@ def main() -> None:
         "--output", "-o",
         required=True,
         help="Output directory path",
+    )
+    analyze_parser.add_argument(
+        "--provider", "-p",
+        default="rule-based",
+        choices=["rule-based", "mock-llm"],
+        help="Analysis provider (default: rule-based)",
     )
 
     args = parser.parse_args()

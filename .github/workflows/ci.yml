@@ -57,3 +57,28 @@ jobs:
           test -f outputs/ci_pdf_smoke_test/source_index.json
           grep -q "Source Appendix" outputs/ci_pdf_smoke_test/cards.html
           grep -q "source-chunk_" outputs/ci_pdf_smoke_test/cards.html
+
+      - name: Smoke test mock-llm text input
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_mock_smoke_test \
+            --provider mock-llm
+          test -f outputs/ci_mock_smoke_test/source_index.json
+          test -f outputs/ci_mock_smoke_test/cards.html
+          grep -q "Source Appendix" outputs/ci_mock_smoke_test/cards.html
+          grep -q '"provider": "mock-llm"' outputs/ci_mock_smoke_test/run_summary.json
+          grep -q '"uses_external_api": false' outputs/ci_mock_smoke_test/run_summary.json
+
+      - name: Smoke test mock-llm PDF input
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_paper.pdf \
+            --output outputs/ci_mock_pdf_smoke_test \
+            --provider mock-llm
+          test -f outputs/ci_mock_pdf_smoke_test/source_pages.json
+          test -f outputs/ci_mock_pdf_smoke_test/source_index.json
+          test -f outputs/ci_mock_pdf_smoke_test/cards.html
+          grep -q "Source Appendix" outputs/ci_mock_pdf_smoke_test/cards.html
+          grep -q '"provider": "mock-llm"' outputs/ci_mock_pdf_smoke_test/run_summary.json
+          grep -q '"uses_external_api": false' outputs/ci_mock_pdf_smoke_test/run_summary.json

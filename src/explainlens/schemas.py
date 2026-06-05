@@ -117,5 +117,8 @@ class RunSummary(BaseModel):
     card_count: int = Field(default=0)
     output_files: List[str] = Field(default_factory=list, description="Files generated")
     extraction_method: str = Field(default="built-in", description="How text was extracted")
+    provider: str = Field(default="rule-based", description="Provider name used for analysis")
+    provider_version: str = Field(default="rule-based-v0.1", description="Provider version string")
+    uses_external_api: bool = Field(default=False, description="Whether the provider calls external APIs")
     warnings: List[str] = Field(default_factory=list, description="Warnings during processing")
     source_quality: dict = Field(default_factory=dict, description="Source quality metadata")

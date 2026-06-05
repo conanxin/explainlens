@@ -9,7 +9,7 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前版本**: v0.1.0-alpha (Phase 2 — PDF support)。
+> **当前版本**: v0.1.0-alpha (Phase 3 — Provider adapter interface)。
 > **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
 > 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
@@ -54,6 +54,7 @@ See [docs/DEMO.md](docs/DEMO.md).
 - 📄 **多格式导出** — JSON / Markdown / HTML
 - 📎 **Clickable Citations** — 每个卡片的 source 区域可点击，跳转到页面底部的 Source Appendix
 - 📊 **Source Index** — `source_index.json` 记录 chunk/card/page 交叉引用
+- 🔌 **Provider Interface** — 可插拔分析后端（rule-based + mock-llm），不调用外部 API
 - 🧩 **SVG 占位图** — 无外部 API 依赖，纯本地运行
 
 ## 安装
@@ -109,6 +110,27 @@ python -m explainlens.cli analyze \
 - 目前不深度解析表格、公式和图形
 - 文本提取通过 PyMuPDF 完成，完全本地运行
 
+## Providers
+
+ExplainLens supports provider-based analysis via the `--provider` flag.
+
+```bash
+# Default: rule-based heuristic provider
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run --provider rule-based
+
+# Mock LLM: simulates future LLM output (no API calls)
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/mock_run --provider mock-llm
+```
+
+Current providers:
+
+| Provider | Description | External API |
+|----------|-------------|--------------|
+| `rule-based` | Default local heuristic provider | No |
+| `mock-llm` | Local mock provider for testing the future LLM interface | No |
+
+No external AI APIs are called in v0.1.x. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for details.
+
 ## 输出文件
 
 运行后，输出目录包含：
@@ -149,7 +171,12 @@ explainlens/
 │   ├── exporters.py    # 多格式导出
 │   ├── source_index.py # 来源索引与 citation
 │   ├── schemas.py      # 数据模型
-│   └── cli.py          # CLI 入口
+│   ├── cli.py          # CLI 入口
+│   └── providers/      # Provider 适配器接口
+│       ├── base.py     # 抽象接口
+│       ├── rule_based.py # 规则引擎 provider
+│       ├── mock_llm.py # Mock LLM provider
+│       └── registry.py # Provider 注册中心
 ├── tests/              # 测试
 ├── examples/           # 示例输入
 ├── docs/               # 文档
@@ -164,7 +191,7 @@ explainlens/
 
 - **Phase 1** ✅ 本地文本 → 解释卡（当前版本）
 - **Phase 2** ✅ PDF 解析（searchable PDF text extraction）
-- **Phase 3** LLM 插件接口
+- **Phase 3** 🔄 Provider 适配器接口（rule-based + mock-llm）
 - **Phase 4** 真实图片生成适配器
 - **Phase 5** Web UI
 - **Phase 6** 长图/PPT/视频导出

@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Provider adapter interface (`ExplainProvider` base class).
+- `rule-based` provider wrapping existing heuristic pipeline.
+- `mock-llm` provider for local testing of the provider interface.
+- `--provider` CLI option (choices: `rule-based`, `mock-llm`).
+- Provider metadata in `run_summary.json` (`provider`, `provider_version`, `uses_external_api`).
+- Provider registry with clear error messages for unknown providers.
+- `docs/PROVIDERS.md` — complete provider documentation.
+- `.env.example` — environment variable template (no real keys).
+- 3 new test files: `test_providers.py`, `test_mock_llm_provider.py`, `test_provider_cli.py`.
+- Mock provider smoke tests in CI (text + PDF).
+
+### Security
+
+- Providers default to local execution — no external AI APIs are called.
+- `.env.example` contains only placeholder comments, no real credentials.
+- Provider contract requires `uses_external_api` to be set correctly.
+- Source traceability preserved across all providers.
+
+### Added
+
 - Searchable PDF input support with PyMuPDF (fitz).
 - Page-aware chunking: chunks preserve page boundaries.
 - `source_pages.json` output with per-page text and offsets.
