@@ -9,6 +9,7 @@ from typing import List, Optional
 from jinja2 import Template
 
 from explainlens.schemas import ImageCard, Storyboard, StoryboardPanel, SourceChunk
+from explainlens.source_index import format_source_label, build_card_source_links
 
 
 # ── SVG placeholder generators per metaphor type ──────────────────
@@ -189,6 +190,8 @@ _CARD_TEMPLATE = Template(r"""<!DOCTYPE html>
     --slate-900: #0f172a;
     --green-50:  #f0fdf4;
     --green-600: #16a34a;
+    --amber-50: #fffbeb;
+    --amber-600: #d97706;
     --radius-lg: 16px;
     --radius-md: 10px;
     --radius-sm: 6px;
@@ -204,6 +207,7 @@ _CARD_TEMPLATE = Template(r"""<!DOCTYPE html>
     color: var(--slate-700);
     line-height: 1.6;
     min-height: 100vh;
+    scroll-behavior: smooth;
   }
 
   /* ── Hero ── */
@@ -423,6 +427,93 @@ _CARD_TEMPLATE = Template(r"""<!DOCTYPE html>
     white-space: pre-wrap;
   }
 
+  /* ── Citation links ── */
+  .citation-link, .back-to-card {
+    color: var(--blue-500);
+    text-decoration: none;
+    border-bottom: 1px dashed currentColor;
+  }
+  .citation-link:hover, .back-to-card:hover {
+    color: var(--blue-700);
+    border-bottom-style: solid;
+  }
+  .source-label {
+    display: inline-block;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.78rem;
+    background: var(--slate-100);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* ── Source Appendix ── */
+  .appendix-wrap {
+    max-width: 900px;
+    margin: 32px auto 48px;
+    padding: 0 24px;
+  }
+  .appendix-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--slate-200);
+  }
+  .appendix-item {
+    background: #fff;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    border: 1px solid var(--slate-200);
+  }
+  .appendix-item-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .appendix-chunk-id {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: var(--blue-700);
+  }
+  .appendix-page {
+    font-size: 0.78rem;
+    color: var(--slate-500);
+    background: var(--slate-100);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .appendix-section {
+    font-size: 0.75rem;
+    color: var(--amber-600);
+    background: var(--amber-50);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .appendix-usedby {
+    font-size: 0.78rem;
+    color: var(--slate-500);
+    margin-bottom: 8px;
+  }
+  .appendix-excerpt {
+    font-size: 0.82rem;
+    color: var(--slate-700);
+    line-height: 1.6;
+    background: var(--slate-50);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--slate-200);
+  }
+  .appendix-back {
+    font-size: 0.78rem;
+    margin-top: 8px;
+  }
+
   /* ── Footer ── */
   .footer {
     text-align: center;
@@ -490,9 +581,9 @@ _CARD_TEMPLATE = Template(r"""<!DOCTYPE html>
 <div class="section-title">Explainer Cards</div>
 
 <!-- Cards -->
-<div class="card-grid">
+<div class="card-grid" id="card-grid-top">
 {% for card in cards %}
-  <div class="card">
+  <div class="card" id="card-{{ card.card_id }}">
     <div class="card-header">
       <span class="card-num">{{ loop.index }} / {{ cards|length }}</span>
       <div class="card-title">{{ card.title }}</div>
@@ -516,10 +607,49 @@ _CARD_TEMPLATE = Template(r"""<!DOCTYPE html>
       </details>
 
       <details>
-        <summary>Source Excerpt &mdash; {{ card.source_chunk_ids | join(', ') }}{% if card.source_info %} &middot; {{ card.source_info }}{% endif %}</summary>
+        <summary>
+          Source{% if card._links and card._links|length > 1 %}s{% endif %}:
+          {% for link in card._links %}
+            [<a href="#source-{{ link.chunk_id }}" class="citation-link">{{ link.label }}</a>]{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </summary>
         <div class="detail-body">{{ card.source_excerpt[:300] }}{% if card.source_excerpt|length > 300 %}&hellip;{% endif %}</div>
       </details>
 
+    </div>
+  </div>
+{% endfor %}
+</div>
+
+<!-- Source Appendix -->
+<div class="appendix-wrap">
+  <div class="appendix-title">Source Appendix</div>
+{% for chunk in chunks %}
+  <div class="appendix-item" id="source-{{ chunk.chunk_id }}">
+    <div class="appendix-item-header">
+      <span class="appendix-chunk-id">{{ chunk.chunk_id }}</span>
+      {% if chunk.page_start and chunk.page_end and chunk.page_start == chunk.page_end %}
+        <span class="appendix-page">page {{ chunk.page_start }}</span>
+      {% elif chunk.page_start and chunk.page_end %}
+        <span class="appendix-page">pages {{ chunk.page_start }}-{{ chunk.page_end }}</span>
+      {% elif chunk.approx_page %}
+        <span class="appendix-page">~page {{ chunk.approx_page }}</span>
+      {% endif %}
+      {% if chunk.section_title %}
+        <span class="appendix-section">{{ chunk.section_title }}</span>
+      {% endif %}
+    </div>
+    {% if chunk._used_by_cards %}
+    <div class="appendix-usedby">
+      Used by:
+      {% for cid in chunk._used_by_cards %}
+        <a href="#card-{{ cid }}" class="back-to-card">{{ cid }}</a>{% if not loop.last %}, {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="appendix-excerpt">{{ chunk._excerpt }}</div>
+    <div class="appendix-back">
+      <a href="#card-grid-top" class="back-to-card">&uarr; Back to cards</a>
     </div>
   </div>
 {% endfor %}
@@ -582,42 +712,46 @@ def render_cards_html(
 ) -> str:
     """Render the cards list into a complete, standalone HTML page.
 
+    Includes clickable source citations and a Source Appendix at the bottom.
+    No object.__setattr__ hack — all data passed as explicit template context.
+
     Args:
         cards: List of ImageCard objects.
         input_title: Title or filename of the input document.
         chunk_count: Number of source chunks processed.
-        chunks: Optional list of SourceChunk objects for page-aware source info.
+        chunks: Optional list of SourceChunk objects for citations.
 
     Returns:
         Complete HTML string.
     """
-    # Build source info per card from chunks
-    card_source_info: dict[str, str] = {}
-    if chunks:
-        chunk_by_id = {c.chunk_id: c for c in chunks}
-        for card in cards:
-            pages_set: set[int] = set()
-            for cid in card.source_chunk_ids:
-                ch = chunk_by_id.get(cid)
-                if ch and ch.page_start:
-                    pages_set.add(ch.page_start)
-                if ch and ch.page_end:
-                    pages_set.add(ch.page_end)
-            if pages_set:
-                sorted_pages = sorted(pages_set)
-                if len(sorted_pages) == 1:
-                    card_source_info[card.card_id] = f"page {sorted_pages[0]}"
-                else:
-                    card_source_info[card.card_id] = (
-                        f"pages {sorted_pages[0]}-{sorted_pages[-1]}"
-                    )
-    # Attach source_info to each card (for Jinja2 template)
+    # Build per-card citation links (as transient _links for template)
+    card_links = build_card_source_links(cards, chunks or [])
+
     for card in cards:
-        object.__setattr__(card, "source_info", card_source_info.get(card.card_id, ""))
+        links = card_links.get(card.card_id, {})
+        object.__setattr__(card, "_links", [
+            {"chunk_id": cid, "label": format_source_label(
+                next((ch for ch in (chunks or []) if ch.chunk_id == cid),
+                     SourceChunk(chunk_id=cid, text="", start_char=0, end_char=0)))}
+            for cid in links.get("chunk_ids", [])
+        ])
+
+    # Build chunk context for appendix (as transient attrs for template)
+    cards_by_chunk: dict[str, list[str]] = {}
+    for card in cards:
+        for cid in card.source_chunk_ids:
+            cards_by_chunk.setdefault(cid, []).append(card.card_id)
+
+    for ch in (chunks or []):
+        object.__setattr__(ch, "_used_by_cards", cards_by_chunk.get(ch.chunk_id, []))
+        excerpt = ch.text
+        if len(excerpt) > 500:
+            excerpt = excerpt[:500] + "..."
+        object.__setattr__(ch, "_excerpt", excerpt)
 
     meta = {
         "input_title": input_title,
         "chunk_count": chunk_count,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
     }
-    return _CARD_TEMPLATE.render(cards=cards, meta=meta)
+    return _CARD_TEMPLATE.render(cards=cards, chunks=chunks or [], meta=meta)

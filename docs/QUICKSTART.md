@@ -85,6 +85,8 @@ xdg-open outputs/sample_run/cards.html
 - takeaway 要点
 - 原文来源摘录
 
+打开 `cards.html` 后，可以点击卡片的 source citation 链接，跳转到页面底部的 Source Appendix，查看完整的原文摘录和引用关系。
+
 ## 7. 用自己的文件
 
 ```bash
@@ -110,7 +112,7 @@ python -m explainlens.cli analyze \
 start outputs/pdf_demo/cards.html
 ```
 
-PDF 输出会额外包含 `source_pages.json`，且每张卡片会显示来源页码。
+PDF 输出会额外包含 `source_pages.json`，且每张卡片会显示来源页码和可点击的 citations。打开 `cards.html` 并点击 source citation 即可跳转到页面底部的 Source Appendix。
 
 ---
 

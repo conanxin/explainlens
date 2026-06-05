@@ -159,6 +159,34 @@ def main() -> int:
                       "FAQ must document scanned PDF limitation")
     print()
 
+    # --- Source Citations ---
+    print(">>> Source Citations")
+    all_pass &= check("src/explainlens/source_index.py exists",
+                      file_exists("src/explainlens/source_index.py"),
+                      "source_index module must exist")
+    all_pass &= check("README mentions source_index.json",
+                      file_contains("README.md", r"source_index\.json"),
+                      "README must mention source_index.json output")
+    all_pass &= check("FAQ contains source citations explanation",
+                      file_contains("docs/FAQ.md", r"Source citations"),
+                      "FAQ must document source citation feature")
+    all_pass &= check("FAQ mentions Source Appendix",
+                      file_contains("docs/FAQ.md", r"Source Appendix"),
+                      "FAQ must mention Source Appendix")
+    all_pass &= check("source_index.json output checkable in CI",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"source_index\.json"),
+                      "CI must verify source_index.json is generated")
+    all_pass &= check("CI checks for Source Appendix in HTML",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"Source Appendix"),
+                      "CI must verify Source Appendix in cards.html")
+    all_pass &= check("CI checks for source anchors in HTML",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"source-chunk_"),
+                      "CI must verify source-chunk anchors in cards.html")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

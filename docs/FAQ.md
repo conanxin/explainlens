@@ -35,6 +35,40 @@ python -m explainlens.cli analyze --input examples/sample_paper.pdf --output out
 
 ---
 
+## Source citations 是怎么工作的？
+
+每张 ExplainLens 卡片都关联了原文片段（source chunk）。在 `cards.html` 中：
+
+1. 每张卡片的 Source 区域显示可点击的 citation 链接，例如 `[chunk_001 · page 1]`
+2. 点击 citation 会跳转到页面底部的 **Source Appendix**
+3. Source Appendix 列出每个 source chunk 的完整摘录、页码、以及引用它的卡片列表
+4. 每个卡片 ID 也可点击，返回对应卡片
+
+说明：当前版本**不会**打开原始 PDF 页面，只会跳转到 HTML 页面内的 Source Appendix。后续可支持 PDF page viewer。
+
+---
+
+## 可以跳转回原始 PDF 吗？
+
+**目前不可以。** Source Appendix 是 HTML 页面内的引用附录，不提供原始 PDF 文件跳转。
+
+后续版本（Phase 2.2+）计划支持：
+- PDF page viewer（在浏览器中逐页查看原 PDF）
+- 从 citation 直接跳转到 PDF 对应页面
+
+---
+
+## ExplainLens 会引用精确的原文摘录吗？
+
+**会。** 每张卡片都包含 `source_excerpt`（来源摘录），直接取自原文分块。Source Appendix 中显示完整的 chunk text（截断至 500 字符，保留核心内容）。
+
+Source chunks 保留：
+- 字符偏移（start_char / end_char）
+- 页码信息（page_start / page_end，仅 PDF）
+- 关联的卡片列表
+
+---
+
 ## 当前版本会调用外部 AI API 吗？
 
 **不会。** 当前版本使用启发式规则（关键词匹配、固定模板）完成所有分析。

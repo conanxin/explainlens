@@ -52,6 +52,8 @@ See [docs/DEMO.md](docs/DEMO.md).
 - 🎨 **卡通隐喻** — 迷宫、放大镜、侦探板、知识树等 8 种视觉隐喻
 - 🖼️ **图片 Prompt** — 生成英文 prompt，适配 Stable Diffusion / DALL-E
 - 📄 **多格式导出** — JSON / Markdown / HTML
+- 📎 **Clickable Citations** — 每个卡片的 source 区域可点击，跳转到页面底部的 Source Appendix
+- 📊 **Source Index** — `source_index.json` 记录 chunk/card/page 交叉引用
 - 🧩 **SVG 占位图** — 无外部 API 依赖，纯本地运行
 
 ## 安装
@@ -80,6 +82,8 @@ explainlens analyze \
 ```
 
 然后用浏览器打开 `outputs/sample_run/cards.html` 预览结果。
+
+ExplainLens 输出 `source_index.json` 文件，并在 `cards.html` 中提供可点击的 citations，点击即可跳转到页面底部的 Source Appendix。
 
 ## 快速开始（详细版）
 
@@ -113,6 +117,7 @@ python -m explainlens.cli analyze \
 |------|------|
 | `source_pages.json` | 每页文本和偏移（仅 PDF） |
 | `source_chunks.json` | 原文分块结果 |
+| `source_index.json` | 来源索引：chunk/page/card 交叉引用 |
 | `concept_map.json` | 核心概念提取 |
 | `teaching_plan.json` | 8 步教学计划 |
 | `storyboard.json` | 卡通分镜脚本 |
@@ -142,6 +147,7 @@ explainlens/
 │   ├── storyboard.py   # 卡通分镜生成
 │   ├── renderer.py     # HTML 渲染
 │   ├── exporters.py    # 多格式导出
+│   ├── source_index.py # 来源索引与 citation
 │   ├── schemas.py      # 数据模型
 │   └── cli.py          # CLI 入口
 ├── tests/              # 测试

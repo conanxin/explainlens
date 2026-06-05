@@ -27,6 +27,7 @@ from explainlens.storyboard import create_storyboard
 from explainlens.renderer import create_cards_from_storyboard, render_cards_html
 from explainlens.exporters import write_json, write_text, export_cards_markdown
 from explainlens.schemas import RunSummary, SourcePage
+from explainlens.source_index import build_source_index, build_source_quality
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
@@ -113,9 +114,20 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     )
     write_text(cards_html, output_dir / "cards.html")
 
+    # 9b. Source index (cross-references for citation UX)
+    source_index = build_source_index(
+        chunks=chunks,
+        cards=cards,
+        pages=pages if source_type == "pdf" else None,
+        source_file=str(input_path.resolve()),
+        input_type=source_type,
+    )
+    write_json(source_index, output_dir / "source_index.json")
+
     # 10. Run summary
     output_files = [
         "source_chunks.json",
+        "source_index.json",
         "concept_map.json",
         "teaching_plan.json",
         "storyboard.json",
@@ -126,6 +138,11 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     ]
     if source_type == "pdf":
         output_files.insert(0, "source_pages.json")
+
+    # Track warnings
+    source_quality = build_source_quality(chunks, pages if source_type == "pdf" else None)
+    if source_quality.get("empty_pages"):
+        warnings.append(f"Empty pages: {source_quality['empty_pages']}")
 
     summary = RunSummary(
         input_file=str(input_path.resolve()),
@@ -140,18 +157,20 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         output_files=output_files,
         extraction_method="pymupdf" if source_type == "pdf" else "built-in",
         warnings=warnings,
+        source_quality=source_quality,
     )
     write_json(summary, output_dir / "run_summary.json")
 
     # Summary
     print()
     print("ExplainLens run complete")
-    print(f"  Input type: {source_type}")
+    print(f"  Input type:   {source_type}")
     if source_type == "pdf":
-        print(f"  Pages:      {len(pages)}")
-    print(f"  Chunks:     {len(chunks)}")
-    print(f"  Cards:      {len(cards)}")
-    print(f"  Output:     {output_dir / 'cards.html'}")
+        print(f"  Pages:        {len(pages)}")
+    print(f"  Chunks:       {len(chunks)}")
+    print(f"  Cards:        {len(cards)}")
+    print(f"  Source index: {output_dir / 'source_index.json'}")
+    print(f"  Output:       {output_dir / 'cards.html'}")
 
     return 0
 

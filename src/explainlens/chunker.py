@@ -17,6 +17,14 @@ from explainlens.schemas import SourceChunk, SourcePage
 _HEADING_RE = re.compile(r"^#{1,6}\s+(.+)$", re.MULTILINE)
 # Paragraphs separated by blank lines
 _PARAGRAPH_SPLIT_RE = re.compile(r"\n\s*\n")
+# Detect bibliography/references sections in PDF text
+_REFERENCES_RE = re.compile(
+    r"^\s*(references?|bibliography|works?\s*cited|acknowledg?ments?)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+# Repeated whitespace normalization
+_MULTI_SPACE_RE = re.compile(r"  +")
+_MULTI_NEWLINE_RE = re.compile(r"\n{3,}")
 
 
 # ── txt / md chunking (original behavior) ────────────────────────
@@ -100,6 +108,19 @@ def _chunk_text_paragraphs(
 
 # ── PDF page-aware chunking ──────────────────────────────────────
 
+def _clean_text(text: str) -> str:
+    """Normalize whitespace: collapse multiple spaces, limit blank lines."""
+    text = _MULTI_SPACE_RE.sub(" ", text)
+    return _MULTI_NEWLINE_RE.sub("\n\n", text)
+
+
+def _detect_section_title(text: str) -> str | None:
+    """Detect if this text block is a references/bibliography section."""
+    if _REFERENCES_RE.search(text):
+        return "References"
+    return None
+
+
 def _chunk_pdf_pages(
     full_text: str,
     pages: List[SourcePage],
@@ -111,6 +132,13 @@ def _chunk_pdf_pages(
     Chunks prefer page boundaries: each chunk belongs to a single page
     unless a page contains very little text (merged with neighbors).
     Long pages are split into multiple chunks by paragraph.
+
+    Improvements over Phase 2:
+    - Cleans repeated whitespace
+    - Removes empty chunks (pages with no content generate warning, not chunk)
+    - Merges short adjacent paragraphs within a page
+    - Detects bibliography/references sections
+    - Preserves page_start/page_end/approx_page
     """
     if not pages:
         return []
@@ -119,14 +147,16 @@ def _chunk_pdf_pages(
     chunk_index = 0
 
     for page in pages:
-        page_text = page.text
+        page_text = _clean_text(page.text)
 
         if not page_text.strip():
-            # Empty page — skip, no chunk
+            # Empty page — skip, no chunk (warning handled upstream)
             continue
 
+        section_title = _detect_section_title(page_text)
+
         if len(page_text) <= max_chunk_chars:
-            # Single-page chunk
+            # Single-page chunk — keep it
             chunk_index += 1
             chunks.append(SourceChunk(
                 chunk_id=f"chunk_{chunk_index:03d}",
@@ -136,7 +166,7 @@ def _chunk_pdf_pages(
                 approx_page=page.page_number,
                 page_start=page.page_number,
                 page_end=page.page_number,
-                section_title=None,
+                section_title=section_title,
                 source_type="pdf",
             ))
             continue
@@ -167,9 +197,12 @@ def _chunk_pdf_pages(
                         approx_page=page.page_number,
                         page_start=page.page_number,
                         page_end=page.page_number,
-                        section_title=None,
+                        section_title=_detect_section_title(current),
                         source_type="pdf",
                     ))
+                elif current and len(current) < min_chunk_chars and paragraphs:
+                    # Short paragraph — carry forward and merge with next
+                    stripped = current + "\n\n" + stripped
                 current = stripped
 
         # Flush remaining
@@ -185,7 +218,7 @@ def _chunk_pdf_pages(
                 approx_page=page.page_number,
                 page_start=page.page_number,
                 page_end=page.page_number,
-                section_title=None,
+                section_title=_detect_section_title(current),
                 source_type="pdf",
             ))
 

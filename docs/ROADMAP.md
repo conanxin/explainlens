@@ -28,6 +28,20 @@
 - [x] CLI auto-detects input type
 - [x] No OCR — scanned PDFs produce clear error
 
+## Phase 2.1: Source Citations & Quality
+
+**Status: Complete**
+
+- [x] `source_index.json` output with chunk/page/card cross-references
+- [x] Clickable source citations in HTML (link to Source Appendix)
+- [x] Source Appendix in HTML and Markdown exports
+- [x] Source quality metadata in `run_summary.json`
+- [x] Improved PDF chunk cleanup (whitespace normalization, short chunk merging)
+- [x] Bibliography/references section detection
+- [x] Source label formatter (`format_source_label`)
+- [x] Card-source link builder (`build_card_source_links`)
+- [x] Renderer uses explicit data structures (no Pydantic attribute hacks)
+
 ## Phase 3: LLM Plugin Interface
 
 **Planned**

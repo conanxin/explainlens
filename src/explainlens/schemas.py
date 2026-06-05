@@ -118,3 +118,4 @@ class RunSummary(BaseModel):
     output_files: List[str] = Field(default_factory=list, description="Files generated")
     extraction_method: str = Field(default="built-in", description="How text was extracted")
     warnings: List[str] = Field(default_factory=list, description="Warnings during processing")
+    source_quality: dict = Field(default_factory=dict, description="Source quality metadata")

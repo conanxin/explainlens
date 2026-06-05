@@ -89,8 +89,9 @@ outputs/demo_pdf/cards.html
 
 **PDF-specific output**:
 
-PDF runs also produce `source_pages.json` with per-page metadata, and each card's
-source excerpt shows the page number where the content was found.
+PDF runs produce `source_pages.json` with per-page metadata, and `source_index.json`
+with cross-references between pages, chunks, and cards. Each card's source excerpt
+shows clickable citations linking to the Source Appendix at the bottom of the page.
 
 ---
 
@@ -101,6 +102,7 @@ Each demo run produces the following files in the output directory:
 | File | Description |
 |------|-------------|
 | `source_chunks.json` | Text split into chunks with character offsets |
+| `source_index.json` | Cross-reference index: chunk, page, and card mapping |
 | `concept_map.json` | Extracted core problem, concepts, methods, evidence, limitations |
 | `teaching_plan.json` | 8-step teaching plan with goals and visual metaphors |
 | `storyboard.json` | 8 storyboard panels with scene descriptions |
@@ -137,7 +139,11 @@ The page shows:
   - A plain-language explanation
   - A takeaway callout
   - A collapsible image prompt (for future use with image generation APIs)
-  - A collapsible source excerpt (tracing back to the original text)
+  - A collapsible source excerpt (tracing back to the original text, with clickable citations)
+
+Cards have clickable source citations (e.g., `[chunk_001 · page 1]`) that link to
+the Source Appendix at the bottom of the page, where each source chunk is shown
+with its full excerpt and the cards that reference it.
 
 ---
 

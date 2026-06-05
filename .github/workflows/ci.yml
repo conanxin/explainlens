@@ -40,6 +40,7 @@ jobs:
           test -f outputs/ci_smoke_test/cards.json
           test -f outputs/ci_smoke_test/cards.md
           test -f outputs/ci_smoke_test/run_summary.json
+          test -f outputs/ci_smoke_test/source_index.json
 
       - name: Generate sample PDF
         run: python scripts/create_sample_pdf.py
@@ -53,3 +54,6 @@ jobs:
           test -f outputs/ci_pdf_smoke_test/source_chunks.json
           test -f outputs/ci_pdf_smoke_test/cards.html
           test -f outputs/ci_pdf_smoke_test/run_summary.json
+          test -f outputs/ci_pdf_smoke_test/source_index.json
+          grep -q "Source Appendix" outputs/ci_pdf_smoke_test/cards.html
+          grep -q "source-chunk_" outputs/ci_pdf_smoke_test/cards.html

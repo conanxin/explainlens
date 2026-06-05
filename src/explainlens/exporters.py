@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, List, Dict, Optional
 
 from explainlens.schemas import SourceChunk
+from explainlens.source_index import format_source_label, build_card_source_links
 
 
 def _json_serializer(obj: Any) -> Any:
@@ -64,15 +65,20 @@ def _page_info(chunk_ids: List[str], chunks: Optional[List[SourceChunk]] = None)
 
 
 def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] = None) -> str:
-    """Export cards as a Markdown document.
+    """Export cards as a Markdown document with source appendix.
+
+    Each card's source section uses clickable-style citation labels.
+    Document ends with a Source Appendix listing every chunk with its excerpt.
 
     Args:
         cards: List of ImageCard objects.
-        chunks: Optional list of SourceChunk objects for page info.
+        chunks: Optional list of SourceChunk objects for page info and appendix.
 
     Returns:
         Markdown string.
     """
+    card_links = build_card_source_links(cards, chunks or [])
+
     lines = [
         "# ExplainLens — 图解解释卡",
         "",
@@ -83,6 +89,9 @@ def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] 
     ]
 
     for i, card in enumerate(cards, 1):
+        links = card_links.get(card.card_id, {})
+        source_labels = links.get("labels", [])
+
         lines.append(f"## 卡片 {i}：{card.title}")
         lines.append("")
         lines.append(f"**解释**：{card.explanation}")
@@ -94,13 +103,50 @@ def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] 
         lines.append(card.image_prompt)
         lines.append(f"```")
         lines.append("")
-        source_line = f"**来源片段**：{', '.join(card.source_chunk_ids)}"
-        source_line += _page_info(card.source_chunk_ids, chunks)
-        lines.append(source_line)
+
+        # Citation-style source line
+        if source_labels:
+            citation_parts = [f"`{label}`" for label in source_labels]
+            lines.append(f"**Sources:** {', '.join(citation_parts)}")
+        else:
+            lines.append(f"**Sources:** `{', '.join(card.source_chunk_ids)}`")
         lines.append("")
-        lines.append(f"> {card.source_excerpt}")
-        lines.append("")
+
+        if card.source_excerpt:
+            lines.append(f"> Source excerpt: {card.source_excerpt}")
+            lines.append("")
+
         lines.append("---")
         lines.append("")
+
+    # Source Appendix
+    if chunks:
+        lines.append("## Source Appendix")
+        lines.append("")
+
+        cards_by_chunk: dict[str, list[str]] = {}
+        for card in cards:
+            for cid in card.source_chunk_ids:
+                cards_by_chunk.setdefault(cid, []).append(card.card_id)
+
+        for ch in chunks:
+            label = format_source_label(ch)
+            lines.append(f"### {label}")
+            lines.append("")
+
+            used_by = cards_by_chunk.get(ch.chunk_id, [])
+            if used_by:
+                lines.append(f"Used by: {', '.join(used_by)}")
+                lines.append("")
+
+            if ch.section_title:
+                lines.append(f"*Section: {ch.section_title}*")
+                lines.append("")
+
+            excerpt = ch.text
+            if len(excerpt) > 500:
+                excerpt = excerpt[:500] + "..."
+            lines.append(f"> {excerpt}")
+            lines.append("")
 
     return "\n".join(lines)

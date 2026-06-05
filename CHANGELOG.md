@@ -11,20 +11,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Searchable PDF input support with PyMuPDF (fitk).
+- Searchable PDF input support with PyMuPDF (fitz).
 - Page-aware chunking: chunks preserve page boundaries.
 - `source_pages.json` output with per-page text and offsets.
+- `source_index.json` output with chunk/page/card cross-references.
+- Clickable source citations in HTML exports (link to Source Appendix).
+- Source Appendix in HTML and Markdown exports.
+- Source quality warnings in `run_summary.json` (empty pages, short/long chunks).
 - `scripts/create_sample_pdf.py` — generates a 3-page fictional demo PDF.
 - Page references in HTML (Source Excerpt & page N) and Markdown exports.
 - `input_type`, `page_count`, and `extraction_method` fields in RunSummary.
+- `source_quality` field in RunSummary.
 - CLI auto-detects input type (.txt, .md, .pdf).
-- 23 new tests (test_pdf_parser, test_page_aware_chunks, test_pdf_cli).
+- `format_source_label` and `build_card_source_links` helpers in source_index module.
+- Bibliography/references section detection in PDF chunks.
+- 33 new tests (source_index, citation_rendering, source_quality).
+
+### Changed
+
+- Improved PDF chunk cleanup: whitespace normalization, short paragraph merging.
+- Renderer uses explicit data structures for source info (no Pydantic attribute hacks).
+- Markdown export includes Source Appendix with chunk excerpts.
 
 ### Limitations
 
 - No OCR — scanned PDFs produce clear error message.
 - Tables, figures, and formulas are not deeply parsed.
 - Multi-column layouts may produce out-of-order text.
+- Source citations link to HTML appendix, not original PDF pages.
 
 ---
 
