@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Searchable PDF input support with PyMuPDF (fitk).
+- Page-aware chunking: chunks preserve page boundaries.
+- `source_pages.json` output with per-page text and offsets.
+- `scripts/create_sample_pdf.py` — generates a 3-page fictional demo PDF.
+- Page references in HTML (Source Excerpt & page N) and Markdown exports.
+- `input_type`, `page_count`, and `extraction_method` fields in RunSummary.
+- CLI auto-detects input type (.txt, .md, .pdf).
+- 23 new tests (test_pdf_parser, test_page_aware_chunks, test_pdf_cli).
+
+### Limitations
+
+- No OCR — scanned PDFs produce clear error message.
+- Tables, figures, and formulas are not deeply parsed.
+- Multi-column layouts may produce out-of-order text.
+
+---
+
 ## v0.1.0-alpha — 2026-06-05 (Release)
 
 ### Added

@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from jinja2 import Template
 
-from explainlens.schemas import ImageCard, Storyboard, StoryboardPanel
+from explainlens.schemas import ImageCard, Storyboard, StoryboardPanel, SourceChunk
 
 
 # ── SVG placeholder generators per metaphor type ──────────────────
@@ -516,7 +516,7 @@ _CARD_TEMPLATE = Template(r"""<!DOCTYPE html>
       </details>
 
       <details>
-        <summary>Source Excerpt &mdash; {{ card.source_chunk_ids | join(', ') }}</summary>
+        <summary>Source Excerpt &mdash; {{ card.source_chunk_ids | join(', ') }}{% if card.source_info %} &middot; {{ card.source_info }}{% endif %}</summary>
         <div class="detail-body">{{ card.source_excerpt[:300] }}{% if card.source_excerpt|length > 300 %}&hellip;{% endif %}</div>
       </details>
 
@@ -578,6 +578,7 @@ def render_cards_html(
     cards: List[ImageCard],
     input_title: str = "Unknown",
     chunk_count: int = 0,
+    chunks: Optional[List[SourceChunk]] = None,
 ) -> str:
     """Render the cards list into a complete, standalone HTML page.
 
@@ -585,10 +586,35 @@ def render_cards_html(
         cards: List of ImageCard objects.
         input_title: Title or filename of the input document.
         chunk_count: Number of source chunks processed.
+        chunks: Optional list of SourceChunk objects for page-aware source info.
 
     Returns:
         Complete HTML string.
     """
+    # Build source info per card from chunks
+    card_source_info: dict[str, str] = {}
+    if chunks:
+        chunk_by_id = {c.chunk_id: c for c in chunks}
+        for card in cards:
+            pages_set: set[int] = set()
+            for cid in card.source_chunk_ids:
+                ch = chunk_by_id.get(cid)
+                if ch and ch.page_start:
+                    pages_set.add(ch.page_start)
+                if ch and ch.page_end:
+                    pages_set.add(ch.page_end)
+            if pages_set:
+                sorted_pages = sorted(pages_set)
+                if len(sorted_pages) == 1:
+                    card_source_info[card.card_id] = f"page {sorted_pages[0]}"
+                else:
+                    card_source_info[card.card_id] = (
+                        f"pages {sorted_pages[0]}-{sorted_pages[-1]}"
+                    )
+    # Attach source_info to each card (for Jinja2 template)
+    for card in cards:
+        object.__setattr__(card, "source_info", card_source_info.get(card.card_id, ""))
+
     meta = {
         "input_title": input_title,
         "chunk_count": chunk_count,

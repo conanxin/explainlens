@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
+
+from explainlens.schemas import SourceChunk
 
 
 def _json_serializer(obj: Any) -> Any:
@@ -41,11 +43,32 @@ def write_text(content: str, file_path: Path) -> None:
         f.write(content)
 
 
-def export_cards_markdown(cards: List[Any]) -> str:
+def _page_info(chunk_ids: List[str], chunks: Optional[List[SourceChunk]] = None) -> str:
+    """Build page info string for source references."""
+    if not chunks:
+        return ""
+    chunk_by_id = {c.chunk_id: c for c in chunks}
+    pages: set[int] = set()
+    for cid in chunk_ids:
+        ch = chunk_by_id.get(cid)
+        if ch and ch.page_start:
+            pages.add(ch.page_start)
+        if ch and ch.page_end:
+            pages.add(ch.page_end)
+    if not pages:
+        return ""
+    sorted_pages = sorted(pages)
+    if len(sorted_pages) == 1:
+        return f" page {sorted_pages[0]}"
+    return f" pages {sorted_pages[0]}-{sorted_pages[-1]}"
+
+
+def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] = None) -> str:
     """Export cards as a Markdown document.
 
     Args:
         cards: List of ImageCard objects.
+        chunks: Optional list of SourceChunk objects for page info.
 
     Returns:
         Markdown string.
@@ -71,7 +94,9 @@ def export_cards_markdown(cards: List[Any]) -> str:
         lines.append(card.image_prompt)
         lines.append(f"```")
         lines.append("")
-        lines.append(f"**来源片段**：{', '.join(card.source_chunk_ids)}")
+        source_line = f"**来源片段**：{', '.join(card.source_chunk_ids)}"
+        source_line += _page_info(card.source_chunk_ids, chunks)
+        lines.append(source_line)
         lines.append("")
         lines.append(f"> {card.source_excerpt}")
         lines.append("")

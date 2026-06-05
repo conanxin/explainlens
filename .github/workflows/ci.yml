@@ -31,7 +31,7 @@ jobs:
       - name: Run tests
         run: python -m pytest -q
 
-      - name: Smoke test CLI
+      - name: Smoke test text input
         run: |
           python -m explainlens.cli analyze \
             --input examples/sample_article.txt \
@@ -40,3 +40,16 @@ jobs:
           test -f outputs/ci_smoke_test/cards.json
           test -f outputs/ci_smoke_test/cards.md
           test -f outputs/ci_smoke_test/run_summary.json
+
+      - name: Generate sample PDF
+        run: python scripts/create_sample_pdf.py
+
+      - name: Smoke test PDF input
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_paper.pdf \
+            --output outputs/ci_pdf_smoke_test
+          test -f outputs/ci_pdf_smoke_test/source_pages.json
+          test -f outputs/ci_pdf_smoke_test/source_chunks.json
+          test -f outputs/ci_pdf_smoke_test/cards.html
+          test -f outputs/ci_pdf_smoke_test/run_summary.json

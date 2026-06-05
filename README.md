@@ -9,8 +9,8 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前版本**: v0.1.0-alpha — 本地 MVP。
-> **重要说明**：当前版本**不支持 PDF**，**不调用外部 AI API**，**不生成真实图片**。
+> **当前版本**: v0.1.0-alpha (Phase 2 — PDF support)。
+> **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
 > 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
 
@@ -44,8 +44,9 @@ See [docs/DEMO.md](docs/DEMO.md).
 
 ## 功能特性
 
-- 📖 **文本解析** — 支持 `.txt` 和 `.md` 文件
-- 🔪 **智能分块** — 按段落切分，保留字符偏移
+- 📖 **文本解析** — 支持 `.txt`、`.md` 和 `.pdf`（可搜索 PDF）文件
+- 📄 **PDF 输入** — Phase 2 支持搜索型 PDF，保留页码信息
+- 🔪 **智能分块** — 按段落切分（txt/md）或页感知切分（PDF），保留字符偏移
 - 🔍 **关键词分析** — 启发式提取核心问题、概念、方法、证据、局限
 - 🎓 **教学路径** — 8 步固定教学计划
 - 🎨 **卡通隐喻** — 迷宫、放大镜、侦探板、知识树等 8 种视觉隐喻
@@ -84,12 +85,33 @@ explainlens analyze \
 
 详见 [docs/QUICKSTART.md](docs/QUICKSTART.md)。
 
+## PDF 输入
+
+ExplainLens Phase 2 支持从可搜索 PDF 中提取文本：
+
+```bash
+# 生成示例 PDF
+python scripts/create_sample_pdf.py
+
+# 分析 PDF
+python -m explainlens.cli analyze \
+  --input examples/sample_paper.pdf \
+  --output outputs/pdf_demo
+```
+
+限制：
+
+- 不支持 OCR（扫描版 PDF 不受支持）
+- 目前不深度解析表格、公式和图形
+- 文本提取通过 PyMuPDF 完成，完全本地运行
+
 ## 输出文件
 
 运行后，输出目录包含：
 
 | 文件 | 说明 |
 |------|------|
+| `source_pages.json` | 每页文本和偏移（仅 PDF） |
 | `source_chunks.json` | 原文分块结果 |
 | `concept_map.json` | 核心概念提取 |
 | `teaching_plan.json` | 8 步教学计划 |
@@ -135,7 +157,7 @@ explainlens/
 详见 [ROADMAP.md](docs/ROADMAP.md)：
 
 - **Phase 1** ✅ 本地文本 → 解释卡（当前版本）
-- **Phase 2** PDF 解析
+- **Phase 2** ✅ PDF 解析（searchable PDF text extraction）
 - **Phase 3** LLM 插件接口
 - **Phase 4** 真实图片生成适配器
 - **Phase 5** Web UI
@@ -143,9 +165,10 @@ explainlens/
 
 ## 当前限制
 
-v0.1.0-alpha 版本有以下已知限制：
+Phase 2 版本有以下已知限制：
 
-- **不支持 PDF** — 仅接受 `.txt` 和 `.md` 输入
+- **不支持扫描版 PDF** — 无 OCR，仅支持搜索型 PDF
+- **不解析表格和公式** — PDF 中的表格、图形、数学符号不深度解析
 - **不调用外部 AI API** — 不使用 OpenAI / Anthropic / Ollama 等服务
 - **不生成真实图片** — 输出 SVG 占位图和 image prompts，不接入 Stable Diffusion / DALL-E
 - **无 Web UI** — 仅命令行工具

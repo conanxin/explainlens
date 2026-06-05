@@ -141,6 +141,24 @@ def main() -> int:
                       "outputs/.gitkeep should be tracked to preserve the output directory")
     print()
 
+    # --- PDF Support ---
+    print(">>> PDF Support")
+    all_pass &= check("pymupdf in pyproject.toml dependencies",
+                      file_contains("pyproject.toml", r"pymupdf>=1\.24"),
+                      "pymupdf must be in dependencies")
+    all_pass &= check("scripts/create_sample_pdf.py exists",
+                      file_exists("scripts/create_sample_pdf.py"))
+    all_pass &= check("README contains PDF input section",
+                      file_contains("README.md", r"PDF 输入"),
+                      "README must document PDF support")
+    all_pass &= check("FAQ mentions PDF support",
+                      file_contains("docs/FAQ.md", r"Phase 2 已支持"),
+                      "FAQ must reflect Phase 2 PDF support")
+    all_pass &= check("FAQ mentions scanned PDF limitation",
+                      file_contains("docs/FAQ.md", r"扫描版 PDF"),
+                      "FAQ must document scanned PDF limitation")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

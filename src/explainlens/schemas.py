@@ -15,7 +15,20 @@ class SourceChunk(BaseModel):
     start_char: int = Field(..., description="Character offset start in original document")
     end_char: int = Field(..., description="Character offset end in original document")
     approx_page: Optional[int] = Field(default=None, description="Approximate page number, if known")
+    page_start: Optional[int] = Field(default=None, description="First page this chunk spans (PDF)")
+    page_end: Optional[int] = Field(default=None, description="Last page this chunk spans (PDF)")
     section_title: Optional[str] = Field(default=None, description="Nearest section heading, if detected")
+    source_type: str = Field(default="txt", description="Source type: txt, md, or pdf")
+
+
+# ── Source Pages ─────────────────────────────────────────────────
+
+class SourcePage(BaseModel):
+    """A single page extracted from a PDF document."""
+    page_number: int = Field(..., description="1-based page number")
+    text: str = Field(..., description="Extracted text from this page")
+    char_start: int = Field(default=0, description="Character offset start in full document text")
+    char_end: int = Field(default=0, description="Character offset end in full document text")
 
 
 # ── Concept Map ──────────────────────────────────────────────────
@@ -95,10 +108,13 @@ class RunSummary(BaseModel):
     """Summary of a complete analysis run."""
     input_file: str = Field(..., description="Path to input file")
     output_dir: str = Field(..., description="Path to output directory")
+    input_type: str = Field(default="txt", description="Input source type: txt, md, or pdf")
     chunk_count: int = Field(default=0)
+    page_count: Optional[int] = Field(default=None, description="Number of source pages (PDF only)")
     concept_count: int = Field(default=0)
     step_count: int = Field(default=0)
     panel_count: int = Field(default=0)
     card_count: int = Field(default=0)
     output_files: List[str] = Field(default_factory=list, description="Files generated")
+    extraction_method: str = Field(default="built-in", description="How text was extracted")
     warnings: List[str] = Field(default_factory=list, description="Warnings during processing")

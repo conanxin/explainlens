@@ -46,7 +46,7 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-预期输出：33 passed。
+预期输出：81 passed。
 
 ## 5. 运行示例
 
@@ -93,7 +93,24 @@ python -m explainlens.cli analyze \
   --output outputs/my_run
 ```
 
-支持 `.txt` 和 `.md` 格式。
+支持 `.txt`、`.md` 和 `.pdf`（可搜索 PDF）格式。
+
+## 8. 分析 PDF 文件
+
+```bash
+# 生成示例 PDF
+python scripts/create_sample_pdf.py
+
+# 分析 PDF，输出包含页码信息
+python -m explainlens.cli analyze \
+  --input examples/sample_paper.pdf \
+  --output outputs/pdf_demo
+
+# 预览结果
+start outputs/pdf_demo/cards.html
+```
+
+PDF 输出会额外包含 `source_pages.json`，且每张卡片会显示来源页码。
 
 ---
 

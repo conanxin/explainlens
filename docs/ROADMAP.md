@@ -18,12 +18,15 @@
 
 ## Phase 2: PDF Parsing
 
-**Planned**
+**Status: Complete**
 
-- [ ] Add PyMuPDF or pdfplumber dependency
-- [ ] Extract text with page numbers
-- [ ] Preserve section structure where possible
-- [ ] Handle multi-column PDF layouts
+- [x] Add PyMuPDF dependency
+- [x] Extract text with page numbers (searchable PDFs only)
+- [x] Page-aware chunking
+- [x] Source page references in HTML/Markdown exports
+- [x] Sample PDF generation script
+- [x] CLI auto-detects input type
+- [x] No OCR — scanned PDFs produce clear error
 
 ## Phase 3: LLM Plugin Interface
 
