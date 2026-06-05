@@ -228,6 +228,48 @@ def main() -> int:
                       "CI must verify uses_external_api is false")
     print()
 
+    # --- Provider Contract (Phase 3.1) ---
+    print(">>> Provider Contract (Phase 3.1)")
+    all_pass &= check("src/explainlens/providers/contract.py exists",
+                      file_exists("src/explainlens/providers/contract.py"),
+                      "Provider contract module must exist")
+    all_pass &= check("src/explainlens/providers/openai_draft.py exists",
+                      file_exists("src/explainlens/providers/openai_draft.py"),
+                      "Disabled OpenAI provider draft must exist")
+    all_pass &= check("README contains provider status table",
+                      file_contains("README.md", r"\|\s*Available\s*\|"),
+                      "README must show provider status table")
+    all_pass &= check("docs/PROVIDERS.md contains provider lifecycle",
+                      file_contains("docs/PROVIDERS.md", r"Provider lifecycle"),
+                      "PROVIDERS.md must document provider lifecycle")
+    all_pass &= check("docs/PROVIDERS.md contains provider manifest",
+                      file_contains("docs/PROVIDERS.md", r"provider_manifest"),
+                      "PROVIDERS.md must document provider_manifest")
+    all_pass &= check("docs/SECURITY.md contains external API providers",
+                      file_contains("docs/SECURITY.md", r"external API"),
+                      "SECURITY.md must cover external API provider safety")
+    all_pass &= check("CLI providers command runs",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"explainlens\.cli providers"),
+                      "CI should test the providers subcommand")
+    all_pass &= check("CI generates provider_manifest.json",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"provider_manifest\.json"),
+                      "CI must verify provider_manifest.json is generated")
+    all_pass &= check("provider_manifest uses_external_api is false",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"uses_external_api.*false"),
+                      "CI must verify uses_external_api is false in manifest")
+    all_pass &= check(".env.example has no real API key",
+                      not file_contains(".env.example", r"sk-[a-zA-Z0-9]{20,}"),
+                      ".env.example must not contain real API keys")
+    # Check that openai provider is disabled (error message exists in source)
+    openai_disabled = grep_source(r"Provider.*openai.*disabled")
+    all_pass &= check("disabled OpenAI provider cannot run",
+                      len(openai_disabled) > 0,
+                      "OpenAI provider must be disabled with clear error")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

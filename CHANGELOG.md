@@ -29,6 +29,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Provider contract requires `uses_external_api` to be set correctly.
 - Source traceability preserved across all providers.
 
+### Added (Phase 3.1)
+
+- Provider capability metadata (`ProviderCapabilities` in `contract.py`).
+- `provider_manifest.json` output for each analysis run.
+- `providers` CLI subcommand (list all known providers).
+- Disabled OpenAI provider draft (`openai_draft.py`).
+- Provider output contract validation (`validate_provider_output()`).
+- Provider registry upgraded (`list_provider_capabilities()`, `get_provider_capabilities()`, `is_provider_available()`).
+- CLI `--provider` now accepts `openai` (disabled, fails closed).
+- `provider_manifest.json` CI checks added.
+- Disabled provider fails closed (no partial output).
+- 4 new test files: `test_provider_contract.py`, `test_provider_manifest.py`, `test_disabled_openai_provider.py`, `test_provider_listing_cli.py` (68 new tests).
+
+### Security (Phase 3.1)
+
+- Disabled external providers fail closed.
+- Provider manifest discloses external API usage.
+- Provider contract requires source chunk traceability.
+- `.env.example` updated with `EXPLAINLENS_PROVIDER` (documentation only).
+
 ### Added
 
 - Searchable PDF input support with PyMuPDF (fitz).

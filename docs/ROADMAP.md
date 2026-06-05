@@ -42,27 +42,28 @@
 - [x] Card-source link builder (`build_card_source_links`)
 - [x] Renderer uses explicit data structures (no Pydantic attribute hacks)
 
-## Phase 3: LLM Adapter Interface with Mock Provider
+## Phase 3.1: Provider Contract Hardening + Disabled OpenAI Draft
 
 **Status: Complete**
 
-- [x] Abstract provider base class (`ExplainProvider`)
-- [x] `rule-based` provider wrapping existing heuristic pipeline
-- [x] `mock-llm` provider simulating future LLM output (no API calls)
-- [x] Provider registry with clear error messages
-- [x] `--provider` CLI parameter
-- [x] Provider metadata in `run_summary.json` (provider, provider_version, uses_external_api)
-- [x] Provider documentation (`docs/PROVIDERS.md`)
-- [x] All output files preserved across providers
-- [x] Source citations preserved across providers
-- [x] No external AI SDK dependencies added
+- [x] `contract.py` — `ProviderCapabilities` model + `validate_provider_output()`
+- [x] `openai_draft.py` — disabled OpenAI provider (raises `RuntimeError`)
+- [x] Provider registry upgraded (`DISABLED_PROVIDERS`, `get_provider_capabilities()`, `is_provider_available()`)
+- [x] `providers` CLI subcommand (lists available + disabled providers)
+- [x] `provider_manifest.json` output (safety + capabilities disclosure)
+- [x] CLI `--provider openai` fails closed (no partial output)
+- [x] Provider contract validation in `validate_provider_output()`
+- [x] 4 new test files: `test_provider_contract.py`, `test_provider_manifest.py`, `test_disabled_openai_provider.py`, `test_provider_listing_cli.py`
+- [x] Release audit updated (Phase 3.1 checks)
+- [x] CI updated (provider listing + manifest checks)
 
 ### Remaining for Phase 3.x
 
-- [ ] `openai` provider — real OpenAI API adapter
+- [ ] `openai` provider — real OpenAI API adapter (enable `openai_draft.py`)
 - [ ] `local` provider — Ollama / llama.cpp adapter
 - [ ] `custom` provider — user-defined API endpoint
-- [ ] Provider configuration via environment variables
+- [ ] Provider configuration via environment variables (`EXPLAINLENS_PROVIDER`)
+- [ ] Structured output mode for OpenAI provider
 
 ## Phase 4: Real Image Generation Adapter
 

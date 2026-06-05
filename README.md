@@ -9,7 +9,7 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前版本**: v0.1.0-alpha (Phase 3 — Provider adapter interface)。
+> **当前版本**: v0.1.0-alpha (Phase 3.1 — Provider contract hardening)。
 > **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
 > 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
@@ -112,9 +112,13 @@ python -m explainlens.cli analyze \
 
 ## Providers
 
-ExplainLens supports provider-based analysis via the `--provider` flag.
+ExplainLens supports provider-based analysis via the `--provider` flag,
+and a provider listing command:
 
 ```bash
+# List all known providers (available + disabled)
+python -m explainlens.cli providers
+
 # Default: rule-based heuristic provider
 python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run --provider rule-based
 
@@ -122,12 +126,13 @@ python -m explainlens.cli analyze --input examples/sample_article.txt --output o
 python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/mock_run --provider mock-llm
 ```
 
-Current providers:
+Provider status:
 
-| Provider | Description | External API |
-|----------|-------------|--------------|
-| `rule-based` | Default local heuristic provider | No |
-| `mock-llm` | Local mock provider for testing the future LLM interface | No |
+| Provider | Status | External API | API key required |
+|----------|---------|--------------|--------------------|
+| `rule-based` | Available | no | no |
+| `mock-llm` | Available | no | no |
+| `openai` | disabled | yes | yes |
 
 No external AI APIs are called in v0.1.x. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for details.
 
@@ -191,7 +196,8 @@ explainlens/
 
 - **Phase 1** ✅ 本地文本 → 解释卡（当前版本）
 - **Phase 2** ✅ PDF 解析（searchable PDF text extraction）
-- **Phase 3** 🔄 Provider 适配器接口（rule-based + mock-llm）
+- **Phase 3** 🔄 Provider 适配器接口 + 契约硬化（rule-based + mock-llm + disabled openai）
+- **Phase 3.1** ✅ Provider contract hardening + disabled OpenAI draft
 - **Phase 4** 真实图片生成适配器
 - **Phase 5** Web UI
 - **Phase 6** 长图/PPT/视频导出

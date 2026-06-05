@@ -69,6 +69,9 @@ jobs:
           grep -q "Source Appendix" outputs/ci_mock_smoke_test/cards.html
           grep -q '"provider": "mock-llm"' outputs/ci_mock_smoke_test/run_summary.json
           grep -q '"uses_external_api": false' outputs/ci_mock_smoke_test/run_summary.json
+          test -f outputs/ci_mock_smoke_test/provider_manifest.json
+          grep -q '"uses_external_api": false' outputs/ci_mock_smoke_test/provider_manifest.json
+          grep -q '"requires_api_key": false' outputs/ci_mock_smoke_test/provider_manifest.json
 
       - name: Smoke test mock-llm PDF input
         run: |
@@ -82,3 +85,17 @@ jobs:
           grep -q "Source Appendix" outputs/ci_mock_pdf_smoke_test/cards.html
           grep -q '"provider": "mock-llm"' outputs/ci_mock_pdf_smoke_test/run_summary.json
           grep -q '"uses_external_api": false' outputs/ci_mock_pdf_smoke_test/run_summary.json
+          test -f outputs/ci_mock_pdf_smoke_test/provider_manifest.json
+          grep -q '"uses_external_api": false' outputs/ci_mock_pdf_smoke_test/provider_manifest.json
+          grep -q '"requires_api_key": false' outputs/ci_mock_pdf_smoke_test/provider_manifest.json
+
+      - name: Providers CLI listing
+        run: |
+          python -m explainlens.cli providers
+
+      - name: Check disabled openai provider (should fail)
+        run: |
+          ! python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_openai_disabled_test \
+            --provider openai

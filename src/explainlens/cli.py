@@ -5,6 +5,7 @@ Usage:
     python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run --provider rule-based
     python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/mock_run --provider mock-llm
     python -m explainlens.cli analyze --input examples/sample_paper.pdf --output outputs/pdf_demo
+    python -m explainlens.cli providers
 """
 
 from __future__ import annotations
@@ -27,7 +28,11 @@ from explainlens.renderer import create_cards_from_storyboard, render_cards_html
 from explainlens.exporters import write_json, write_text, export_cards_markdown
 from explainlens.schemas import RunSummary, SourcePage
 from explainlens.source_index import build_source_index, build_source_quality
-from explainlens.providers import get_provider
+from explainlens.providers import get_provider, list_providers, list_provider_capabilities
+from explainlens.providers.contract import ProviderCapabilities
+
+
+# ── CLI Commands ──────────────────────────────────────────────
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
@@ -36,10 +41,19 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     output_dir = Path(args.output)
 
     warnings: list[str] = []
+
+    # 0. Validate provider BEFORE any output is created
+    try:
+        provider = get_provider(args.provider)
+    except (ValueError, RuntimeError) as e:
+        print(f"Provider error: {e}", file=sys.stderr)
+        return 1
+
     print(f"Reading: {input_path}")
     print(f"Output:  {output_dir}")
+    print(f"   -> Provider: {provider.name} ({provider.version})")
 
-    # Ensure output directory
+    # Ensure output directory (only after provider is validated)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Detect source type
@@ -73,11 +87,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     print(f"   -> Created {len(chunks)} chunks")
     write_json([c.model_dump() for c in chunks], output_dir / "source_chunks.json")
 
-    # 3. Initialize provider
-    provider = get_provider(args.provider)
-    print(f"   -> Provider: {provider.name} ({provider.version})")
-
-    # 4. Analyze — concept map
+    # 3. Analyze — concept map
     concept_map = provider.build_concept_map(chunks)
     print(f"   -> Extracted {len(concept_map.key_concepts)} key concepts, "
           f"{len(concept_map.key_claims)} claims")
@@ -128,6 +138,12 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     )
     write_json(source_index, output_dir / "source_index.json")
 
+    # 10c. Provider manifest
+    _write_provider_manifest(
+        output_dir=output_dir,
+        provider=provider,
+    )
+
     # 11. Run summary
     output_files = [
         "source_chunks.json",
@@ -139,6 +155,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         "cards.json",
         "cards.md",
         "cards.html",
+        "provider_manifest.json",
     ]
     if source_type == "pdf":
         output_files.insert(0, "source_pages.json")
@@ -178,9 +195,103 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     print(f"  Chunks:       {len(chunks)}")
     print(f"  Cards:        {len(cards)}")
     print(f"  Source index: {output_dir / 'source_index.json'}")
+    print(f"  Provider manifest: {output_dir / 'provider_manifest.json'}")
     print(f"  Output:       {output_dir / 'cards.html'}")
+    return 0
+
+
+def _write_provider_manifest(output_dir: Path, provider) -> None:
+    """Write provider_manifest.json for the current run.
+
+    Args:
+        output_dir: Output directory path.
+        provider: The active provider instance.
+    """
+    caps = None
+    try:
+        from explainlens.providers.registry import get_provider_capabilities
+        caps = get_provider_capabilities(provider.name)
+    except Exception:
+        pass
+
+    if caps is None:
+        # Fallback: build a basic manifest from provider attributes
+        caps = ProviderCapabilities(
+            name=provider.name,
+            version=provider.version,
+            status="available",
+            uses_external_api=provider.uses_external_api,
+            requires_api_key=False,
+            supports_pdf=True,
+            supports_text=True,
+            preserves_source_chunk_ids=True,
+            description=f"{provider.name} provider",
+        )
+
+    manifest = {
+        "provider": caps.name,
+        "provider_version": caps.version,
+        "provider_status": caps.status,
+        "uses_external_api": caps.uses_external_api,
+        "requires_api_key": caps.requires_api_key,
+        "capabilities": {
+            "supports_pdf": caps.supports_pdf,
+            "supports_text": caps.supports_text,
+            "preserves_source_chunk_ids": caps.preserves_source_chunk_ids,
+        },
+        "safety": caps.safety_manifest(),
+    }
+    write_json(manifest, output_dir / "provider_manifest.json")
+
+
+def cmd_providers(args: argparse.Namespace) -> int:
+    """List all known providers (available + disabled)."""
+    print("Available providers:\n")
+    for info in list_providers():
+        name = info["name"]
+        version = info["version"]
+        ext_api = "yes" if info["uses_external_api"] else "no"
+        needs_key = "yes" if _provider_requires_key(name) else "no"
+        print(f"  - {name}")
+        print(f"    Status:       available")
+        print(f"    External API: {ext_api}")
+        print(f"    Requires API key: {needs_key}")
+        print()
+
+    # Disabled providers
+    try:
+        from explainlens.providers.registry import DISABLED_PROVIDERS
+        if DISABLED_PROVIDERS:
+            print("Disabled providers:\n")
+            for name in sorted(DISABLED_PROVIDERS.keys()):
+                caps = _get_caps(name)
+                ext_api = "yes" if caps and caps.uses_external_api else "no"
+                needs_key = "yes" if caps and caps.requires_api_key else "no"
+                print(f"  - {name}")
+                print(f"    Status:       disabled")
+                print(f"    External API: {ext_api}")
+                print(f"    Requires API key: {needs_key}")
+                print()
+    except ImportError:
+        pass
 
     return 0
+
+
+def _provider_requires_key(name: str) -> bool:
+    caps = _get_caps(name)
+    return caps.requires_api_key if caps else False
+
+
+def _get_caps(name: str) -> ProviderCapabilities | None:
+    try:
+        from explainlens.providers.registry import get_provider_capabilities
+        return get_provider_capabilities(name)
+    except Exception:
+        return None
+
+
+# ── CLI Entry Point ───────────────────────────────────────────
 
 
 def main() -> None:
@@ -192,7 +303,9 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # analyze subcommand
-    analyze_parser = subparsers.add_parser("analyze", help="Analyze a document and generate explainer cards")
+    analyze_parser = subparsers.add_parser(
+        "analyze", help="Analyze a document and generate explainer cards"
+    )
     analyze_parser.add_argument(
         "--input", "-i",
         required=True,
@@ -206,14 +319,21 @@ def main() -> None:
     analyze_parser.add_argument(
         "--provider", "-p",
         default="rule-based",
-        choices=["rule-based", "mock-llm"],
+        choices=["rule-based", "mock-llm", "openai"],
         help="Analysis provider (default: rule-based)",
+    )
+
+    # providers subcommand
+    providers_parser = subparsers.add_parser(
+        "providers", help="List all known providers and their capabilities"
     )
 
     args = parser.parse_args()
 
     if args.command == "analyze":
         sys.exit(cmd_analyze(args))
+    elif args.command == "providers":
+        sys.exit(cmd_providers(args))
     else:
         parser.print_help()
         sys.exit(1)
