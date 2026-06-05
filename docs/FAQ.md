@@ -187,6 +187,67 @@ OpenAI provider 在 Phase 3.1 中是 **disabled（禁用）** 状态。
 
 ---
 
+## 什么是 local-fixture？
+
+`local-fixture` 是一个**实验性（experimental）**的离线 provider，用于测试未来本地模型 provider 的请求/响应协议。
+
+它的工作方式：
+1. `prompt_contract.py` 构建结构化的 prompt pack
+2. `fixture_transport.py` 模拟本地模型返回结构化响应
+3. `response_contract.py` 验证响应符合契约
+
+**重要**：`local-fixture` 是完全离线的——不调用任何模型、HTTP 端点或子进程。它只是模拟协议流程。
+
+---
+
+## local-fixture 会调用 Ollama 吗？
+
+**不会。** `local-fixture` 完全离线，不调用任何本地模型（Ollama、LM Studio、llama.cpp 等），也不发起任何 HTTP 请求。
+
+它使用了 fixture transport（fixture_transport.py）来模拟响应，不依赖任何外部进程。未来 Phase 3.2B 才会接入真实的本地 HTTP provider。
+
+---
+
+## 什么是 provider_prompt_pack.json？
+
+`provider_prompt_pack.json` 是一个可选的调试输出文件，使用 `--dump-provider-prompt` 参数生成。
+
+它展示了如果接入真实 LLM，系统会发送什么样的结构化 prompt，包括：
+- 源文本 chunks（带 chunk_id 和页码信息）
+- 输出格式约定（output contract，要求 8 张卡片及其必需字段）
+- 安全规则（safety rules，如"保持 source_chunk_ids""不要编造说法"）
+
+这个文件**不包含任何 secrets、API key 或环境变量**。
+
+运行命令：
+```bash
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/debug \
+  --provider local-fixture \
+  --dump-provider-prompt
+```
+
+---
+
+## 可以预览将发送给模型的内容吗？
+
+**可以。** 使用 `--dump-provider-prompt` 参数运行 `local-fixture` provider，即可在输出目录找到 `provider_prompt_pack.json`。
+
+这个文件包含了完整结构化的 prompt pack——source chunks、output contract 和 safety rules——就是将来真实 LLM provider 会接收的内容。
+
+```bash
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/debug \
+  --provider local-fixture \
+  --dump-provider-prompt
+```
+
+然后查看 `outputs/debug/provider_prompt_pack.json`。
+
+---
+
 ## 当前版本会生成真实图片吗？
 
 **不会。** 当前版本只生成：

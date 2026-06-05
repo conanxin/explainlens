@@ -57,6 +57,35 @@ A local mock provider that simulates future LLM output:
 
 ---
 
+## Current providers (continued)
+
+### local-fixture
+
+**Status:** experimental
+
+A completely offline provider that uses fixture data — no model, no HTTP, no subprocess. This provider is designed for contract testing and offline development.
+
+**Architecture:**
+```
+prompt_contract.py → fixture_transport.py → response_contract.py
+```
+
+**Characteristics:**
+- `uses_external_api`: `false`
+- `requires_api_key`: `false`
+- `version`: `local-fixture-v0.1`
+- Completely offline — no model inference
+- No HTTP calls (not even to localhost)
+- Uses fixture/static data for predictable output
+- Suitable for contract verification and offline CI
+
+**Purpose:**
+- Harden provider contracts without network dependencies
+- Provide a stable reference for contract-based testing
+- Enable offline development without local model servers
+
+---
+
 ## Provider lifecycle
 
 Providers have three lifecycle states:
@@ -65,7 +94,7 @@ Providers have three lifecycle states:
 |--------|---------|---------|
 | `available` | Fully functional, can be used | `rule-based`, `mock-llm` |
 | `disabled` | Code exists but is intentionally disabled | `openai` |
-| `experimental` | Partially implemented, may change | (none yet) |
+| `experimental` | Partially implemented, may change | `local-fixture` |
 
 ### Why is OpenAI disabled?
 
@@ -170,6 +199,154 @@ The `provider_manifest.json` output file includes a `safety` section:
 
 ---
 
+## Provider Prompt Contract
+
+The **Provider Prompt Contract** (`prompt_contract.py`) defines how providers construct prompts for LLM or template-based analysis.
+
+**Purpose:**
+- Standardize prompt structure across providers
+- Ensure consistent input format for contract testing
+- Enable offline fixture-based prompt validation
+
+**Key responsibilities:**
+- Define prompt templates for concept extraction
+- Define prompt templates for teaching plan generation
+- Define prompt templates for storyboard creation
+- Validate prompt structure against the contract schema
+
+**For `local-fixture`:**
+- Uses static/fixture prompt templates
+- No dynamic prompt construction
+- Outputs are predetermined for contract verification
+
+---
+
+## Provider Response Contract
+
+The **Provider Response Contract** (`response_contract.py`) defines the expected structure of provider outputs.
+
+**Purpose:**
+- Validate provider outputs against schemas
+- Ensure all providers return compatible data structures
+- Enable contract-based testing without model inference
+
+**Key responsibilities:**
+- Validate `ConceptMap` structure
+- Validate `TeachingPlan` structure
+- Validate `Storyboard` structure
+- Validate `ImageCard` list structure
+- Ensure `source_chunk_ids` traceability
+
+**For `local-fixture`:**
+- Returns fixture data that satisfies all contract validations
+- No model inference — purely structural compliance
+- Enables offline contract verification
+
+---
+
+## Offline Fixture Transport
+
+The **Offline Fixture Transport** (`fixture_transport.py`) is a transport layer that returns static fixture data instead of making HTTP calls.
+
+**Purpose:**
+- Simulate provider responses without network calls
+- Provide deterministic outputs for testing
+- Enable contract hardening without external dependencies
+
+**Key characteristics:**
+- No HTTP requests (not even to localhost)
+- Returns pre-defined fixture data
+- Fully offline and deterministic
+- Compatible with provider contract validation
+
+**Usage:**
+```python
+# In local-fixture provider
+from explainlens.providers.local_fixture.fixture_transport import FixtureTransport
+
+transport = FixtureTransport()
+concept_map = transport.get_fixture_concept_map(chunks)
+teaching_plan = transport.get_fixture_teaching_plan(chunks, concept_map)
+storyboard = transport.get_fixture_storyboard(chunks, concept_map, teaching_plan)
+cards = transport.get_fixture_cards(storyboard)
+```
+
+---
+
+## Why local-fixture does not call local HTTP yet
+
+The `local-fixture` provider intentionally avoids even localhost HTTP calls (e.g., to Ollama or LM Studio) for several reasons:
+
+### 1. Contract-first development
+The primary goal is to harden the provider contracts (`prompt_contract.py`, `response_contract.py`) before introducing real model inference. Fixture data allows us to verify that:
+- All contract validations pass
+- Output structures are correct
+- Source traceability is preserved
+- Safety boundaries are enforced
+
+### 2. Offline CI compatibility
+By avoiding all network calls (including localhost), `local-fixture` can run in:
+- Air-gapped environments
+- CI pipelines without local model servers
+- Development environments without Ollama/LM Studio installed
+
+### 3. Deterministic testing
+Fixture data provides deterministic outputs, making it possible to:
+- Write precise contract validation tests
+- Verify error handling paths
+- Test edge cases with crafted fixtures
+
+### 4. Separation of concerns
+The transport layer (`fixture_transport.py`) is designed to be swapped. Once contracts are hardened, the same provider can use:
+- `fixture_transport.py` for offline testing
+- `ollama_transport.py` for local Ollama
+- `lm_studio_transport.py` for local LM Studio
+
+---
+
+## Future path to Ollama / LM Studio
+
+The `local-fixture` provider is designed as a stepping stone toward real local model support.
+
+### Planned transport implementations
+
+| Transport | Description | Status |
+|-----------|-------------|--------|
+| `fixture_transport.py` | Static fixture data | ✅ Implemented |
+| `ollama_transport.py` | Ollama local API | 🔄 Planned |
+| `lm_studio_transport.py` | LM Studio local API | 🔄 Planned |
+
+### Migration path
+
+1. **Phase 1 (Current):** `local-fixture` with `fixture_transport.py`
+   - Contract hardening
+   - Offline CI
+   - Structural validation
+
+2. **Phase 2:** Add `ollama_transport.py`
+   - Real model inference via Ollama
+   - HTTP calls to `http://localhost:11434`
+   - Same provider contract, different transport
+
+3. **Phase 3:** Add `lm_studio_transport.py`
+   - Real model inference via LM Studio
+   - HTTP calls to `http://localhost:1234`
+   - Same provider contract, different transport
+
+### Provider status progression
+
+```
+experimental (local-fixture with fixtures)
+    ↓
+available (local-fixture with Ollama)
+    ↓
+available (local-fixture with LM Studio)
+```
+
+The provider name `local-fixture` may be renamed to `local` once real model support is added.
+
+---
+
 ## Provider manifest
 
 Every analysis run produces a `provider_manifest.json` file in the output directory.
@@ -205,10 +382,14 @@ The following providers are planned for future releases:
 | Provider | Description | Phase |
 |----------|-------------|-------|
 | `openai` | OpenAI GPT API (GPT-4, GPT-4o) | Phase 3.x (draft disabled) |
-| `local` | Local models via Ollama, llama.cpp | Phase 3.x |
+| `local` | Local models via Ollama, llama.cpp | Phase 3.x (partially implemented as `local-fixture`) |
 | `custom` | User-defined external API endpoint | Phase 3.x |
 | `anthropic` | Anthropic Claude API | Future |
 | `deepseek` | DeepSeek API | Future |
+
+### Note: local-fixture (experimental)
+
+The `local-fixture` provider is a precursor to the full `local` provider. It implements the same provider interface but uses fixture data instead of real model inference. See [Future path to Ollama / LM Studio](#future-path-to-ollama--lm-studio) for the migration plan.
 
 ---
 
@@ -216,8 +397,8 @@ The following providers are planned for future releases:
 
 ExplainLens enforces the following safety guarantees for all providers:
 
-1. **No external API calls by default.** The default `rule-based` provider
-   and the `mock-llm` provider never make network requests.
+1. **No external API calls by default.** The default `rule-based` provider,
+   the `mock-llm` provider, and the `local-fixture` provider never make network requests.
 
 2. **No document upload.** Input files are processed locally and never sent
    to external servers.
@@ -236,6 +417,9 @@ ExplainLens enforces the following safety guarantees for all providers:
 
 7. **Provider manifest discloses external API usage.** The `provider_manifest.json`
    file always documents whether external APIs were called.
+
+8. **Experimental providers are opt-in.** The `local-fixture` provider must
+   be explicitly selected with `--provider local-fixture`.
 
 ---
 
@@ -276,6 +460,11 @@ Available providers:
 
   - mock-llm
     Status:       available
+    External API: no
+    Requires API key: no
+
+  - local-fixture
+    Status:       experimental
     External API: no
     Requires API key: no
 

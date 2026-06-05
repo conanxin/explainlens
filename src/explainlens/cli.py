@@ -4,7 +4,9 @@ Usage:
     python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run
     python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/sample_run --provider rule-based
     python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/mock_run --provider mock-llm
+    python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/local_fixture_demo --provider local-fixture
     python -m explainlens.cli analyze --input examples/sample_paper.pdf --output outputs/pdf_demo
+    python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/debug --provider local-fixture --dump-provider-prompt
     python -m explainlens.cli providers
 """
 
@@ -86,6 +88,10 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         return 1
     print(f"   -> Created {len(chunks)} chunks")
     write_json([c.model_dump() for c in chunks], output_dir / "source_chunks.json")
+
+    # 2b. Optional: dump provider prompt pack for debugging
+    if getattr(args, "dump_provider_prompt", False):
+        _write_provider_prompt_pack(output_dir, chunks, args)
 
     # 3. Analyze — concept map
     concept_map = provider.build_concept_map(chunks)
@@ -200,6 +206,32 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+def _write_provider_prompt_pack(output_dir: Path, chunks: list, args) -> None:
+    """Write provider_prompt_pack.json for debugging.
+
+    Only writes if --dump-provider-prompt was set. Never includes
+    secrets, API keys, or environment variables.
+
+    Args:
+        output_dir: Output directory path.
+        chunks: Source chunks from the document.
+        args: CLI args namespace (for source type detection).
+    """
+    from explainlens.providers.prompt_contract import build_prompt_pack
+
+    prompt_pack = build_prompt_pack(
+        chunks=chunks,
+        desired_card_count=8,
+        audience_level="general",
+    )
+    write_json(prompt_pack.model_dump(), output_dir / "provider_prompt_pack.json")
+
+    # Safety: verify no secrets leaked
+    raw = json.dumps(prompt_pack.model_dump())
+    if "OPENAI_API_KEY" in raw or "sk-" in raw:
+        print("WARNING: provider_prompt_pack.json may contain secrets!", file=sys.stderr)
+
+
 def _write_provider_manifest(output_dir: Path, provider) -> None:
     """Write provider_manifest.json for the current run.
 
@@ -249,11 +281,12 @@ def cmd_providers(args: argparse.Namespace) -> int:
     print("Available providers:\n")
     for info in list_providers():
         name = info["name"]
-        version = info["version"]
         ext_api = "yes" if info["uses_external_api"] else "no"
         needs_key = "yes" if _provider_requires_key(name) else "no"
+        caps_info = _get_caps(name)
+        status = caps_info.status if caps_info else "available"
         print(f"  - {name}")
-        print(f"    Status:       available")
+        print(f"    Status:       {status}")
         print(f"    External API: {ext_api}")
         print(f"    Requires API key: {needs_key}")
         print()
@@ -319,8 +352,14 @@ def main() -> None:
     analyze_parser.add_argument(
         "--provider", "-p",
         default="rule-based",
-        choices=["rule-based", "mock-llm", "openai"],
+        choices=["rule-based", "mock-llm", "openai", "local-fixture"],
         help="Analysis provider (default: rule-based)",
+    )
+    analyze_parser.add_argument(
+        "--dump-provider-prompt",
+        action="store_true",
+        default=False,
+        help="Dump the provider prompt pack to provider_prompt_pack.json for debugging",
     )
 
     # providers subcommand

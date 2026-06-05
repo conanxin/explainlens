@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.env.example` — environment variable template (no real keys).
 - 3 new test files: `test_providers.py`, `test_mock_llm_provider.py`, `test_provider_cli.py`.
 - Mock provider smoke tests in CI (text + PDF).
+- `local-fixture` provider for offline provider protocol testing.
+- Provider prompt contract (`prompt_contract.py`): structured prompt packs with safety rules and output contracts.
+- Provider response contract (`response_contract.py`): structured response validation with Pydantic.
+- Offline fixture transport (`fixture_transport.py`): simulated local model response layer, fully offline.
+- Optional `--dump-provider-prompt` CLI flag for debugging provider prompts.
 
 ### Security
 
@@ -28,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.env.example` contains only placeholder comments, no real credentials.
 - Provider contract requires `uses_external_api` to be set correctly.
 - Source traceability preserved across all providers.
+- `local-fixture` does not call localhost, subprocesses, or external APIs.
+- Provider prompt dumps must not include secrets (verified by CLI safety check).
 
 ### Added (Phase 3.1)
 

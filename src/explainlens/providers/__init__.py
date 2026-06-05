@@ -6,6 +6,19 @@ from explainlens.providers.contract import (
     validate_provider_output,
 )
 from explainlens.providers.openai_draft import OpenAIDraftProvider
+from explainlens.providers.local_fixture import LocalFixtureProvider
+from explainlens.providers.prompt_contract import (
+    ProviderPromptChunk,
+    ProviderPromptPack,
+    build_prompt_pack,
+)
+from explainlens.providers.response_contract import (
+    ProviderCardResponse,
+    ProviderConceptMapResponse,
+    ProviderStructuredResponse,
+    parse_provider_response,
+)
+from explainlens.providers.fixture_transport import run_fixture_transport
 from explainlens.providers.registry import (
     AVAILABLE_PROVIDERS,
     DISABLED_PROVIDERS,
@@ -21,6 +34,15 @@ __all__ = [
     "ProviderCapabilities",
     "validate_provider_output",
     "OpenAIDraftProvider",
+    "LocalFixtureProvider",
+    "ProviderPromptChunk",
+    "ProviderPromptPack",
+    "build_prompt_pack",
+    "ProviderCardResponse",
+    "ProviderConceptMapResponse",
+    "ProviderStructuredResponse",
+    "parse_provider_response",
+    "run_fixture_transport",
     "AVAILABLE_PROVIDERS",
     "DISABLED_PROVIDERS",
     "get_provider",

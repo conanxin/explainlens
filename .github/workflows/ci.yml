@@ -89,6 +89,30 @@ jobs:
           grep -q '"uses_external_api": false' outputs/ci_mock_pdf_smoke_test/provider_manifest.json
           grep -q '"requires_api_key": false' outputs/ci_mock_pdf_smoke_test/provider_manifest.json
 
+      - name: Smoke test local-fixture text input
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_local_fixture_smoke_test \
+            --provider local-fixture
+          test -f outputs/ci_local_fixture_smoke_test/provider_manifest.json
+          test -f outputs/ci_local_fixture_smoke_test/source_index.json
+          test -f outputs/ci_local_fixture_smoke_test/cards.html
+          grep -q '"provider": "local-fixture"' outputs/ci_local_fixture_smoke_test/provider_manifest.json
+          grep -q '"uses_external_api": false' outputs/ci_local_fixture_smoke_test/provider_manifest.json
+          grep -q "Source Appendix" outputs/ci_local_fixture_smoke_test/cards.html
+
+      - name: Smoke test local-fixture prompt dump
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_prompt_dump_test \
+            --provider local-fixture \
+            --dump-provider-prompt
+          test -f outputs/ci_prompt_dump_test/provider_prompt_pack.json
+          ! grep -q "OPENAI_API_KEY" outputs/ci_prompt_dump_test/provider_prompt_pack.json
+          ! grep -q "sk-" outputs/ci_prompt_dump_test/provider_prompt_pack.json
+
       - name: Providers CLI listing
         run: |
           python -m explainlens.cli providers

@@ -58,6 +58,36 @@ Every analysis run produces a `provider_manifest.json` file that discloses:
 - `uses_external_api` must be set correctly
 - No fabrication of data, claims, or conclusions
 
+### Local-Fixture Provider
+
+- Fully offline: no network calls, no subprocess spawning, no environment variable reads
+- Safe for development and testing without any external dependencies
+- Serves as the reference implementation for local provider safety
+
+## Local Provider Security
+
+### Local-Fixture Does Not Call Localhost
+
+The `local-fixture` provider is explicitly designed to be fully offline:
+- It does not make any network requests, including to localhost
+- It does not spawn subprocesses
+- It does not read environment variables
+- All responses are generated locally from static data
+
+### Future Local Providers Must Clearly Disclose Network Calls
+
+Any future local provider that makes network calls (including to localhost) must:
+- Explicitly disclose this behavior in its documentation
+- Set `uses_external_api: true` in the provider manifest
+- Be disabled by default if it makes external network requests
+
+### Provider Prompt Dumps Must Not Include Secrets
+
+When debugging or logging provider prompts:
+- Never include API keys, tokens, or other secrets in prompt dumps
+- Sanitize all output to remove sensitive information
+- Use placeholder values (e.g., `sk-...`) when demonstrating prompt structures
+
 ## Dependency Security
 
 - Keep dependencies updated

@@ -270,6 +270,42 @@ def main() -> int:
                       "OpenAI provider must be disabled with clear error")
     print()
 
+    # --- Local Fixture Provider (Phase 3.2A) ---
+    print(">>> Local Fixture Provider (Phase 3.2A)")
+    all_pass &= check("src/explainlens/providers/prompt_contract.py exists",
+                      file_exists("src/explainlens/providers/prompt_contract.py"),
+                      "Prompt contract module must exist")
+    all_pass &= check("src/explainlens/providers/response_contract.py exists",
+                      file_exists("src/explainlens/providers/response_contract.py"),
+                      "Response contract module must exist")
+    all_pass &= check("src/explainlens/providers/fixture_transport.py exists",
+                      file_exists("src/explainlens/providers/fixture_transport.py"),
+                      "Fixture transport module must exist")
+    all_pass &= check("src/explainlens/providers/local_fixture.py exists",
+                      file_exists("src/explainlens/providers/local_fixture.py"),
+                      "Local fixture provider must exist")
+    all_pass &= check("README contains local-fixture",
+                      file_contains("README.md", r"local-fixture"),
+                      "README must mention local-fixture")
+    all_pass &= check("docs/PROVIDERS.md contains prompt contract",
+                      file_contains("docs/PROVIDERS.md", r"prompt.contract"),
+                      "PROVIDERS.md must document prompt contract")
+    all_pass &= check("docs/SECURITY.md contains localhost",
+                      file_contains("docs/SECURITY.md", r"localhost"),
+                      "SECURITY.md must address localhost safety")
+    all_pass &= check("CLI providers output includes local-fixture",
+                      file_contains(".github/workflows/ci.yml", r"local-fixture"),
+                      "CI must include local-fixture")
+    all_pass &= check("CI generates provider_manifest.json for local-fixture",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"local-fixture.*provider_manifest"),
+                      "CI must verify provider_manifest for local-fixture")
+    all_pass &= check("provider_manifest uses_external_api false (local-fixture)",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"uses_external_api.*false"),
+                      "CI must verify uses_external_api=false for all providers")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

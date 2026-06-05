@@ -57,10 +57,30 @@
 - [x] Release audit updated (Phase 3.1 checks)
 - [x] CI updated (provider listing + manifest checks)
 
+## Phase 3.2A: Local Fixture Provider ✅
+
+**Status: Complete**
+
+- [x] local-fixture provider (experimental, offline)
+- [x] Provider prompt contract (structured prompt packs)
+- [x] Provider response contract (structured response validation)
+- [x] Offline fixture transport (simulated model response layer)
+- [x] Optional provider prompt dump (--dump-provider-prompt)
+
+## Phase 3.2B: Local HTTP Provider
+
+**Status: Remaining**
+
+- [ ] Future local HTTP provider (Ollama / LM Studio / llama.cpp)
+
+## Phase 3.3: OpenAI Opt-in Provider
+
+**Status: Remaining**
+
+- [ ] OpenAI opt-in provider
+
 ### Remaining for Phase 3.x
 
-- [ ] `openai` provider — real OpenAI API adapter (enable `openai_draft.py`)
-- [ ] `local` provider — Ollama / llama.cpp adapter
 - [ ] `custom` provider — user-defined API endpoint
 - [ ] Provider configuration via environment variables (`EXPLAINLENS_PROVIDER`)
 - [ ] Structured output mode for OpenAI provider

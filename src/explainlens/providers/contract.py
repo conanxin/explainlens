@@ -170,3 +170,18 @@ def capabilities_for_openai() -> ProviderCapabilities:
         description="OpenAI GPT API adapter (DISABLED — not implemented yet). "
         "Will call external OpenAI API when enabled in a future release.",
     )
+
+
+def capabilities_for_local_fixture() -> ProviderCapabilities:
+    return ProviderCapabilities(
+        name="local-fixture",
+        version="local-fixture-v0.1",
+        status="experimental",
+        uses_external_api=False,
+        requires_api_key=False,
+        supports_pdf=True,
+        supports_text=True,
+        preserves_source_chunk_ids=True,
+        description="Offline local model fixture for provider protocol testing. "
+        "Uses prompt contract + fixture transport — no real model, no HTTP calls.",
+    )
