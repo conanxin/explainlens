@@ -30,11 +30,16 @@ ExplainLens 是一个开源工具，它像一位 AI 教学导演，能够：
 
 每张卡片包含：标题、简明解释、视觉隐喻、卡通画面描述、图片 prompt、takeaway、原文来源片段。
 
-## 截图
+## Demo Preview
 
-_Screenshot coming soon_
+![ExplainLens demo preview](docs/assets/demo-preview.svg)
 
-运行 `outputs/sample_run/cards.html` 可在浏览器中看到 8 张带 SVG 占位图的解释卡。
+Run `outputs/sample_run/cards.html` to see 8 visual explainer cards in your browser.
+See [docs/DEMO.md](docs/DEMO.md) for the full demo guide.
+
+## Demo
+
+See [docs/DEMO.md](docs/DEMO.md).
 
 ## 功能特性
 

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## v0.1.0-alpha — 2026-06-04
+## v0.1.0-alpha — 2026-06-05 (Release)
 
 ### Added
 
@@ -22,9 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Jinja2-based HTML card renderer
 - Multi-format export: JSON, Markdown, HTML
 - CLI entry point: `python -m explainlens.cli analyze`
-- pytest test suite (33 tests)
-- Open source documentation: README, LICENSE (MIT), CONTRIBUTING, SECURITY, ROADMAP
-- Release audit report
+- pytest test suite (44 tests including release gate tests)
+- Open source documentation: README, LICENSE (MIT), CONTRIBUTING, SECURITY, ROADMAP, FAQ, QUICKSTART, DEMO
+- GitHub Actions CI (Python 3.10 / 3.11 / 3.12)
+- Release audit script: `scripts/release_audit.py` (28 checks)
+- Release preparation script: `scripts/prepare_release.py`
+- Demo preview SVG: `docs/assets/demo-preview.svg`
+- Release notes: `docs/releases/v0.1.0-alpha.md`
+- AI research note example: `examples/sample_ai_research_note.txt`
+- Improved HTML renderer: Hero section, run summary, collapsible panels
 
 ### Not Included (Phase 2+)
 

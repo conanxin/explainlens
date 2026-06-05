@@ -2,12 +2,21 @@
 """Pre-release audit script for ExplainLens.
 
 Runs a series of checks and exits with code 1 if any fail.
+
+Usage:
+    python scripts/release_audit.py
 """
 
 import os
 import re
 import sys
 from pathlib import Path
+
+# Fix Windows GBK encoding issue
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -17,7 +26,7 @@ def check(name: str, condition: bool, detail: str = "") -> bool:
     status = "PASS" if condition else "BLOCKED"
     line = f"  [{status}] {name}"
     if detail and not condition:
-        line += f" — {detail}"
+        line += f" -- {detail}"
     print(line)
     return condition
 
@@ -55,14 +64,14 @@ def grep_source(pattern: str) -> list[Path]:
 
 def main() -> int:
     print("=" * 60)
-    print("  ExplainLens — Release Audit")
+    print("  ExplainLens -- Release Audit")
     print("=" * 60)
     print()
 
     all_pass = True
 
     # --- Documentation ---
-    print("📄 Documentation")
+    print(">>> Documentation")
     all_pass &= check("README.md exists", file_exists("README.md"))
     all_pass &= check("README.md has correct GitHub URL",
                       file_contains("README.md", r"conanxin/explainlens"),
@@ -77,10 +86,13 @@ def main() -> int:
     all_pass &= check("docs/CONTRIBUTING.md exists", file_exists("docs/CONTRIBUTING.md"))
     all_pass &= check("docs/SECURITY.md exists", file_exists("docs/SECURITY.md"))
     all_pass &= check("docs/ROADMAP.md exists", file_exists("docs/ROADMAP.md"))
+    all_pass &= check("docs/DEMO.md exists", file_exists("docs/DEMO.md"))
+    all_pass &= check("docs/assets/demo-preview.svg exists",
+                      file_exists("docs/assets/demo-preview.svg"))
     print()
 
     # --- Configuration ---
-    print("⚙️  Configuration")
+    print(">>> Configuration")
     all_pass &= check("pyproject.toml exists", file_exists("pyproject.toml"))
     all_pass &= check("pyproject.toml has correct name",
                       file_contains("pyproject.toml", r'name\s*=\s*"explainlens"'),
@@ -98,10 +110,10 @@ def main() -> int:
     print()
 
     # --- Security ---
-    print("🔒 Security")
+    print(">>> Security")
     env_committed = (PROJECT_ROOT / ".env").is_file()
     all_pass &= check(".env is NOT committed", not env_committed,
-                      ".env file found in project root — should NOT be committed")
+                      ".env file found in project root -- should NOT be committed")
 
     secret_patterns = [
         (r"sk-[a-zA-Z0-9]{20,}", "OpenAI API key (sk-...)"),
@@ -117,36 +129,40 @@ def main() -> int:
     print()
 
     # --- Examples ---
-    print("📁 Examples")
+    print(">>> Examples")
     all_pass &= check("sample_article.txt exists",
                       file_exists("examples/sample_article.txt"))
     all_pass &= check("sample_paper_excerpt.txt exists",
                       file_exists("examples/sample_paper_excerpt.txt"))
+    all_pass &= check("sample_ai_research_note.txt exists",
+                      file_exists("examples/sample_ai_research_note.txt"))
     all_pass &= check("outputs/.gitkeep exists",
                       file_exists("outputs/.gitkeep"),
                       "outputs/.gitkeep should be tracked to preserve the output directory")
     print()
 
     # --- CI ---
-    print("🔄 CI")
+    print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",
                       file_exists(".github/workflows/ci.yml"))
     print()
 
     # --- Scripts ---
-    print("🛠️  Scripts")
+    print(">>> Scripts")
     all_pass &= check("scripts/release_audit.py exists",
                       file_exists("scripts/release_audit.py"))
+    all_pass &= check("scripts/prepare_release.py exists",
+                      file_exists("scripts/prepare_release.py"))
     print()
 
     # --- Summary ---
     print("=" * 60)
     if all_pass:
-        print("  ✅ ALL CHECKS PASSED — Ready for release")
+        print("  RESULT: ALL CHECKS PASSED -- Ready for release")
         print("=" * 60)
         return 0
     else:
-        print("  ❌ SOME CHECKS FAILED — Fix before release")
+        print("  RESULT: SOME CHECKS FAILED -- Fix before release")
         print("=" * 60)
         return 1
 

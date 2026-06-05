@@ -7,10 +7,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import sys
 from pathlib import Path
 from datetime import datetime
+
+# On Windows the default stdout/stderr encoding may be GBK/cp936 which
+# cannot represent emoji.  Reconfigure to UTF-8 when possible (Python 3.7+).
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from explainlens.parser import parse_text, ParseError
 from explainlens.chunker import chunk_text
@@ -84,7 +92,11 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     write_text(cards_md, output_dir / "cards.md")
 
     # 9. Export HTML
-    cards_html = render_cards_html(cards)
+    cards_html = render_cards_html(
+        cards,
+        input_title=input_path.name,
+        chunk_count=len(chunks),
+    )
     write_text(cards_html, output_dir / "cards.html")
 
     # 10. Run summary
