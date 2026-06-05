@@ -123,3 +123,25 @@ jobs:
             --input examples/sample_article.txt \
             --output outputs/ci_openai_disabled_test \
             --provider openai
+
+      - name: Smoke test local-http fixture input
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_local_http_fixture \
+            --provider local-http \
+            --local-http-protocol fixture
+          test -f outputs/ci_local_http_fixture/provider_manifest.json
+          grep -q '"provider": "local-http"' outputs/ci_local_http_fixture/provider_manifest.json
+          grep -q '"uses_external_api": false' outputs/ci_local_http_fixture/provider_manifest.json
+          grep -q '"uses_local_http": false' outputs/ci_local_http_fixture/provider_manifest.json
+          grep -q "Source Appendix" outputs/ci_local_http_fixture/cards.html
+
+      - name: Check local-http fail-closed (should fail)
+        run: |
+          ! python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_local_http_blocked \
+            --provider local-http \
+            --local-http-protocol ollama-chat \
+            --local-http-endpoint http://localhost:11434/api/chat

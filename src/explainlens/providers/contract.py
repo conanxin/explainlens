@@ -185,3 +185,19 @@ def capabilities_for_local_fixture() -> ProviderCapabilities:
         description="Offline local model fixture for provider protocol testing. "
         "Uses prompt contract + fixture transport — no real model, no HTTP calls.",
     )
+
+
+def capabilities_for_local_http() -> ProviderCapabilities:
+    return ProviderCapabilities(
+        name="local-http",
+        version="local-http-v0.1",
+        status="experimental",
+        uses_external_api=False,  # loopback only, not "external"
+        requires_api_key=False,
+        supports_pdf=True,
+        supports_text=True,
+        preserves_source_chunk_ids=True,
+        description="Local HTTP provider for loopback-only model endpoints. "
+        "Supports fixture (offline), ollama-chat, and openai-compatible-chat protocols. "
+        "Requires explicit opt-in (--allow-local-http) for any network call.",
+    )

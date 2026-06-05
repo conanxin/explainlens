@@ -306,6 +306,40 @@ def main() -> int:
                       "CI must verify uses_external_api=false for all providers")
     print()
 
+    # --- Local HTTP Provider (Phase 3.2B) ---
+    print(">>> Local HTTP Provider (Phase 3.2B)")
+    all_pass &= check("src/explainlens/providers/local_http.py exists",
+                      file_exists("src/explainlens/providers/local_http.py"),
+                      "Local HTTP provider must exist")
+    all_pass &= check("src/explainlens/providers/local_http_transport.py exists",
+                      file_exists("src/explainlens/providers/local_http_transport.py"),
+                      "Local HTTP transport module must exist")
+    all_pass &= check("README contains local-http",
+                      file_contains("README.md", r"local-http"),
+                      "README must mention local-http")
+    all_pass &= check("docs/SECURITY.md contains loopback",
+                      file_contains("docs/SECURITY.md", r"loopback"),
+                      "SECURITY.md must address loopback safety")
+    all_pass &= check("CLI providers output includes local-http",
+                      file_contains(".github/workflows/ci.yml", r"local-http"),
+                      "CI must include local-http")
+    all_pass &= check("local-http fixture smoke test in CI",
+                      file_contains(".github/workflows/ci.yml", r"ci_local_http_fixture"),
+                      "CI must have local-http fixture smoke test")
+    all_pass &= check("CI includes network block check",
+                      file_contains(".github/workflows/ci.yml", r"uses_local_http"),
+                      "CI must verify network block in manifest")
+    all_pass &= check("CI includes fail-closed check for local-http",
+                      file_contains(".github/workflows/ci.yml", r"ci_local_http_blocked"),
+                      "CI must verify local-http fails closed")
+    all_pass &= check("remote endpoint is rejected",
+                      file_contains(".github/workflows/ci.yml", r"ci.*local.*http.*blocked"),
+                      "CI must check remote endpoint rejection")
+    all_pass &= check(".env.example does not include local HTTP secrets",
+                      not file_contains(".env.example", r"LOCAL_HTTP_API_KEY"),
+                      ".env.example must not include local HTTP secrets")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

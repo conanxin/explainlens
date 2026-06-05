@@ -67,11 +67,22 @@
 - [x] Offline fixture transport (simulated model response layer)
 - [x] Optional provider prompt dump (--dump-provider-prompt)
 
-## Phase 3.2B: Local HTTP Provider
+## Phase 3.2B: Local HTTP Provider Draft ✅
 
-**Status: Remaining**
+**Status: Complete**
 
-- [ ] Future local HTTP provider (Ollama / LM Studio / llama.cpp)
+- [x] `local-http` provider (experimental, loopback-only)
+- [x] Local HTTP transport with loopback endpoint validation
+- [x] Support for `fixture`, `ollama-chat`, `openai-compatible-chat` protocols
+- [x] Fail-closed network policy (requires `--allow-local-http`)
+- [x] `is_local_endpoint()` — strict loopback-only validation
+- [x] `build_local_http_payload()` — protocol-specific payload builders
+- [x] `call_local_http_provider()` — HTTP client with safety checks
+- [x] `extract_structured_response_from_chat_json()` — response parsing
+- [x] Network disclosure block in `provider_manifest.json`
+- [x] Fake local server tests in `test_local_http_transport.py`
+- [x] CLI arguments: `--local-http-endpoint`, `--local-http-model`, `--local-http-protocol`, `--allow-local-http`, `--local-http-timeout`
+- [x] 5 new test files: `test_local_http_transport.py`, `test_local_http_provider.py`, `test_local_http_cli.py`
 
 ## Phase 3.3: OpenAI Opt-in Provider
 

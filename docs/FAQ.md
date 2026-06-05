@@ -248,6 +248,117 @@ python -m explainlens.cli analyze \
 
 ---
 
+## local-http 会访问互联网吗？
+
+**不会。** `local-http` provider 只向 **loopback 地址**（localhost / 127.0.0.1 / ::1）发送 HTTP 请求。
+
+它**不会**：
+- 访问 `https://...`（任何 HTTPS）
+- 访问任何远程 HTTP 服务器
+- 访问局域网地址（`192.168.x.x`、`10.x.x.x`、`172.16.x.x`）
+- 发送 Authorization header 或 API key
+
+---
+
+## 为什么 local-http 需要 --allow-local-http？
+
+`local-http` provider 默认 **fail closed**（关闭失败）——如果不显式允许，不会发送任何 HTTP 请求。
+
+这样设计的原因：
+1. **安全默认**：防止意外向本地服务发送文档内容
+2. **显式选择**：用户必须明确理解并同意网络调用
+3. **CI 兼容**：`protocol=fixture` 模式不需要 `--allow-local-http`，CI 可以安全运行
+
+如果需要调用本地模型（如 Ollama），必须同时指定：
+```bash
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/ollama_local \
+  --provider local-http \
+  --local-http-protocol ollama-chat \
+  --local-http-endpoint http://localhost:11434/api/chat \
+  --allow-local-http
+```
+
+---
+
+## 可以使用 Ollama 吗？
+
+**可以，但需要显式 opt-in。**
+
+`local-http` provider 支持 Ollama API 协议（`--local-http-protocol ollama-chat`）。
+
+先确保 Ollama 在本地运行：
+```bash
+# 启动 Ollama（默认 http://localhost:11434）
+ollama serve
+# 另一个终端：拉取模型
+ollama pull llama3.2
+```
+
+然后运行 ExplainLens：
+```bash
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/ollama_local \
+  --provider local-http \
+  --local-http-protocol ollama-chat \
+  --local-http-endpoint http://localhost:11434/api/chat \
+  --local-http-model llama3.2 \
+  --allow-local-http
+```
+
+**重要**：当前版本 `local-http` 是 **experimental**——仅支持 loopback 地址，且需要显式允许。
+
+---
+
+## 可以使用 LM Studio 吗？
+
+**可以，通过 OpenAI-compatible 协议。**
+
+LM Studio 可以启动一个兼容 OpenAI API 的本地服务器。
+
+在 LM Studio 中：
+1. 加载一个模型
+2. 点击 "Local API Server"
+3. 启动服务器（默认 `http://localhost:1234/v1/chat/completions`）
+
+然后运行 ExplainLens：
+```bash
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/lm_studio_local \
+  --provider local-http \
+  --local-http-protocol openai-compatible-chat \
+  --local-http-endpoint http://localhost:1234/v1/chat/completions \
+  --local-http-model local-model \
+  --allow-local-http
+```
+
+---
+
+## 允许哪些 endpoint？
+
+`local-http` provider 只允许 **loopback** endpoint：
+
+**✅ 允许：**
+```
+http://localhost:...
+http://127.0.0.1:...
+http://[::1]:...
+```
+
+**❌ 拒绝：**
+```
+https://...                    (任何 HTTPS)
+http://example.com/...          (任何远程主机)
+http://192.168.x.x/...       (私有局域网)
+http://10.x.x.x/...           (私有局域网)
+http://172.16.x.x/...        (私有局域网)
+```
+
+---
+
 ## 当前版本会生成真实图片吗？
 
 **不会。** 当前版本只生成：

@@ -64,6 +64,52 @@ Every analysis run produces a `provider_manifest.json` file that discloses:
 - Safe for development and testing without any external dependencies
 - Serves as the reference implementation for local provider safety
 
+### Local HTTP Provider (local-http)
+
+**Status:** experimental — requires explicit opt-in.
+
+**Safety rules:**
+
+1. **Only loopback endpoints allowed**
+   - Allowed: `http://localhost:...`, `http://127.0.0.1:...`, `http://[::1]:...`
+   - Rejected: any HTTPS, any remote HTTP, any LAN address (`192.168.x.x`, `10.x.x.x`, `172.16.x.x`)
+
+2. **No Authorization headers**
+   - The provider does NOT send `Authorization` headers
+   - No API keys are read or attached
+
+3. **No remote HTTP**
+   - All requests must go to loopback addresses only
+   - DNS rebinding protection: `localhost` is resolved to verify it maps to `127.0.0.1`
+
+4. **`--allow-local-http` required**
+   - Default behavior: **fail closed**
+   - Must pass `--allow-local-http` to CLI for any HTTP call to proceed
+   - Fixture protocol (`--local-http-protocol fixture`) does NOT require this flag
+
+5. **Prompt content should not be logged**
+   - The provider does NOT print full prompts to stdout/stderr
+   - This avoids accidental exposure of document content in logs
+
+**Provider manifest disclosure:**
+
+The `provider_manifest.json` for `local-http` includes a `network` block:
+```json
+{
+  "network": {
+    "uses_local_http": false,
+    "allows_remote_http": false,
+    "endpoint": null,
+    "protocol": "fixture",
+    "timeout_seconds": 30
+  }
+}
+```
+
+When `uses_local_http` is `true`, the `endpoint` field will show the actual endpoint.
+
+---
+
 ## Local Provider Security
 
 ### Local-Fixture Does Not Call Localhost
@@ -87,6 +133,8 @@ When debugging or logging provider prompts:
 - Never include API keys, tokens, or other secrets in prompt dumps
 - Sanitize all output to remove sensitive information
 - Use placeholder values (e.g., `sk-...`) when demonstrating prompt structures
+
+---
 
 ## Dependency Security
 

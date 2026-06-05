@@ -51,6 +51,18 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         print(f"Provider error: {e}", file=sys.stderr)
         return 1
 
+    # 0b. Configure provider with CLI arguments (if supported)
+    if hasattr(provider, "endpoint") and args.local_http_endpoint is not None:
+        provider.endpoint = args.local_http_endpoint
+    if hasattr(provider, "model"):
+        provider.model = args.local_http_model
+    if hasattr(provider, "protocol"):
+        provider.protocol = args.local_http_protocol
+    if hasattr(provider, "allow_network"):
+        provider.allow_network = args.allow_local_http
+    if hasattr(provider, "timeout_seconds"):
+        provider.timeout_seconds = args.local_http_timeout
+
     print(f"Reading: {input_path}")
     print(f"Output:  {output_dir}")
     print(f"   -> Provider: {provider.name} ({provider.version})")
@@ -273,6 +285,33 @@ def _write_provider_manifest(output_dir: Path, provider) -> None:
         },
         "safety": caps.safety_manifest(),
     }
+
+    # Add network block for local-http provider
+    if provider.name == "local-http":
+        network = {
+            "uses_local_http": False,
+            "allows_remote_http": False,
+            "endpoint": None,
+            "protocol": "fixture",
+            "timeout_seconds": 30,
+        }
+        # Try to get network info from provider
+        if hasattr(provider, "get_network_manifest"):
+            network = provider.get_network_manifest()
+        elif hasattr(provider, "endpoint"):
+            uses_local = (
+                provider.protocol != "fixture" and
+                getattr(provider, "allow_network", False)
+            )
+            network = {
+                "uses_local_http": uses_local,
+                "allows_remote_http": False,
+                "endpoint": provider.endpoint if uses_local else None,
+                "protocol": getattr(provider, "protocol", "fixture"),
+                "timeout_seconds": getattr(provider, "timeout_seconds", 30),
+            }
+        manifest["network"] = network
+
     write_json(manifest, output_dir / "provider_manifest.json")
 
 
@@ -352,8 +391,36 @@ def main() -> None:
     analyze_parser.add_argument(
         "--provider", "-p",
         default="rule-based",
-        choices=["rule-based", "mock-llm", "openai", "local-fixture"],
+        choices=["rule-based", "mock-llm", "openai", "local-fixture", "local-http"],
         help="Analysis provider (default: rule-based)",
+    )
+    analyze_parser.add_argument(
+        "--local-http-endpoint",
+        default=None,
+        help="Local HTTP endpoint (e.g., http://localhost:11434/api/chat)",
+    )
+    analyze_parser.add_argument(
+        "--local-http-model",
+        default="local-model",
+        help="Model name for local HTTP provider (default: local-model)",
+    )
+    analyze_parser.add_argument(
+        "--local-http-protocol",
+        default="fixture",
+        choices=["fixture", "ollama-chat", "openai-compatible-chat"],
+        help="Protocol for local HTTP provider (default: fixture)",
+    )
+    analyze_parser.add_argument(
+        "--allow-local-http",
+        action="store_true",
+        default=False,
+        help="Allow local HTTP calls (required for non-fixture protocols)",
+    )
+    analyze_parser.add_argument(
+        "--local-http-timeout",
+        type=float,
+        default=30.0,
+        help="Timeout for local HTTP calls in seconds (default: 30.0)",
     )
     analyze_parser.add_argument(
         "--dump-provider-prompt",

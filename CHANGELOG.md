@@ -36,6 +36,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `local-fixture` does not call localhost, subprocesses, or external APIs.
 - Provider prompt dumps must not include secrets (verified by CLI safety check).
 
+### Added (Phase 3.2B)
+
+- `local-http` experimental provider (loopback-only HTTP client).
+- Local HTTP transport with loopback endpoint validation.
+- Support for `fixture`, `ollama-chat`, `openai-compatible-chat` protocols.
+- Fail-closed network policy (requires `--allow-local-http`).
+- `is_local_endpoint()` — strict loopback-only validation.
+- `build_local_http_payload()` — protocol-specific payload builders.
+- `call_local_http_provider()` — HTTP client with safety checks.
+- `extract_structured_response_from_chat_json()` — parses chat-format responses.
+- Network disclosure block in `provider_manifest.json` (`network.*`).
+- CLI arguments: `--local-http-endpoint`, `--local-http-model`, `--local-http-protocol`, `--allow-local-http`, `--local-http-timeout`.
+
+### Security (Phase 3.2B)
+
+- `local-http` fails closed unless explicitly enabled.
+- Only loopback endpoints are allowed (`localhost`, `127.0.0.1`, `::1`).
+- Remote HTTP endpoints are rejected with clear error messages.
+- No Authorization headers are sent.
+- No API keys are read or attached.
+- DNS rebinding protection: `localhost` is resolved to verify loopback IP.
+- Prompt content is not logged to stdout/stderr.
+
 ### Added (Phase 3.1)
 
 - Provider capability metadata (`ProviderCapabilities` in `contract.py`).

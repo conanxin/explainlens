@@ -15,10 +15,12 @@ from explainlens.providers.contract import (
     capabilities_for_mock_llm,
     capabilities_for_openai,
     capabilities_for_local_fixture,
+    capabilities_for_local_http,
 )
 from explainlens.providers.rule_based import RuleBasedProvider
 from explainlens.providers.mock_llm import MockLLMProvider
 from explainlens.providers.local_fixture import LocalFixtureProvider
+from explainlens.providers.local_http import LocalHttpProvider
 
 
 # ── Registry ──────────────────────────────────────────────────────
@@ -27,6 +29,7 @@ AVAILABLE_PROVIDERS: dict[str, type[ExplainProvider]] = {
     "rule-based": RuleBasedProvider,
     "mock-llm": MockLLMProvider,
     "local-fixture": LocalFixtureProvider,
+    "local-http": LocalHttpProvider,
 }
 
 DISABLED_PROVIDERS: dict[str, type[ExplainProvider]] = {}
@@ -49,6 +52,7 @@ _CAPABILITIES: dict[str, ProviderCapabilities] = {
     "mock-llm": capabilities_for_mock_llm(),
     "openai": capabilities_for_openai(),
     "local-fixture": capabilities_for_local_fixture(),
+    "local-http": capabilities_for_local_http(),
 }
 
 

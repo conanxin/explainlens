@@ -7,6 +7,7 @@ from explainlens.providers.contract import (
 )
 from explainlens.providers.openai_draft import OpenAIDraftProvider
 from explainlens.providers.local_fixture import LocalFixtureProvider
+from explainlens.providers.local_http import LocalHttpProvider
 from explainlens.providers.prompt_contract import (
     ProviderPromptChunk,
     ProviderPromptPack,
@@ -19,6 +20,13 @@ from explainlens.providers.response_contract import (
     parse_provider_response,
 )
 from explainlens.providers.fixture_transport import run_fixture_transport
+from explainlens.providers.local_http_transport import (
+    ProtocolType,
+    is_local_endpoint,
+    build_local_http_payload,
+    call_local_http_provider,
+    extract_structured_response_from_chat_json,
+)
 from explainlens.providers.registry import (
     AVAILABLE_PROVIDERS,
     DISABLED_PROVIDERS,
@@ -35,6 +43,7 @@ __all__ = [
     "validate_provider_output",
     "OpenAIDraftProvider",
     "LocalFixtureProvider",
+    "LocalHttpProvider",
     "ProviderPromptChunk",
     "ProviderPromptPack",
     "build_prompt_pack",
@@ -43,6 +52,11 @@ __all__ = [
     "ProviderStructuredResponse",
     "parse_provider_response",
     "run_fixture_transport",
+    "ProtocolType",
+    "is_local_endpoint",
+    "build_local_http_payload",
+    "call_local_http_provider",
+    "extract_structured_response_from_chat_json",
     "AVAILABLE_PROVIDERS",
     "DISABLED_PROVIDERS",
     "get_provider",

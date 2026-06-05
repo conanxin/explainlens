@@ -94,7 +94,7 @@ Providers have three lifecycle states:
 |--------|---------|---------|
 | `available` | Fully functional, can be used | `rule-based`, `mock-llm` |
 | `disabled` | Code exists but is intentionally disabled | `openai` |
-| `experimental` | Partially implemented, may change | `local-fixture` |
+| `experimental` | Partially implemented, may change | `local-fixture`, `local-http` |
 
 ### Why is OpenAI disabled?
 
@@ -199,6 +199,124 @@ The `provider_manifest.json` output file includes a `safety` section:
 
 ---
 
+## Local HTTP Provider
+
+**Status:** experimental
+
+A local HTTP provider that makes loopback-only HTTP calls to local model endpoints (Ollama, LM Studio, llama.cpp server, or OpenAI-compatible endpoints).
+
+**Architecture:**
+```
+prompt_contract.py → local_http_transport.py → response_contract.py
+```
+
+**Characteristics:**
+- `uses_external_api`: `false` (loopback only, not "external")
+- `requires_api_key`: `false`
+- `version`: `local-http-v0.1`
+- Supports three protocols: `fixture`, `ollama-chat`, `openai-compatible-chat`
+- Requires explicit opt-in (`--allow-local-http`) for any network call
+- Default behavior: **fail closed**
+
+**Protocol types:**
+
+| Protocol | Description | Endpoint example |
+|-----------|-------------|-----------------|
+| `fixture` | Offline, no HTTP call | (none) |
+| `ollama-chat` | Ollama `/api/chat` API | `http://localhost:11434/api/chat` |
+| `openai-compatible-chat` | OpenAI-compatible `/v1/chat/completions` | `http://localhost:8000/v1/chat/completions` |
+
+**CLI usage:**
+
+```bash
+# Offline fixture mode (no HTTP, CI-safe)
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/local_http_fixture \
+  --provider local-http \
+  --local-http-protocol fixture
+
+# Ollama (requires --allow-local-http)
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/ollama_local \
+  --provider local-http \
+  --local-http-protocol ollama-chat \
+  --local-http-endpoint http://localhost:11434/api/chat \
+  --local-http-model llama3.2 \
+  --allow-local-http
+
+# OpenAI-compatible (requires --allow-local-http`)
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/openai_compat \
+  --provider local-http \
+  --local-http-protocol openai-compatible-chat \
+  --local-http-endpoint http://localhost:8000/v1/chat/completions \
+  --local-http-model local-model \
+  --allow-local-http
+```
+
+**Safety rules:**
+1. ONLY loopback endpoints allowed (`localhost`, `127.0.0.1`, `::1`)
+2. NO remote HTTP (no HTTPS, no LAN addresses)
+3. NO API keys are read or sent
+4. NO Authorization headers are set
+5. Network calls require explicit opt-in (`allow_network=True`)
+6. Default: fail closed (raises `RuntimeError` if `allow_network=False`)
+
+---
+
+## Loopback Safety Policy
+
+The `local-http` provider enforces strict endpoint validation:
+
+### Allowed endpoints
+
+- `http://localhost:...`
+- `http://127.0.0.1:...`
+- `http://[::1]:...`
+
+### Rejected endpoints
+
+- `https://...` (any HTTPS)
+- `http://example.com/...`
+- `http://192.168.x.x/...` (private LAN)
+- `http://10.x.x.x/...` (private LAN)
+- `http://172.16.x.x/...` (private LAN)
+- Any empty or malformed URL
+
+### DNS rebinding protection
+
+The `is_local_endpoint()` function also resolves `localhost` to verify it maps to a loopback IP address, protecting against DNS rebinding attacks.
+
+---
+
+## Fail-Closed Network Policy
+
+The `local-http` provider implements a **fail-closed** policy:
+
+1. **Default: fail closed**
+   - If `allow_network=False` (default), any HTTP call raises `RuntimeError`
+   - No request is sent
+
+2. **Explicit opt-in required**
+   - Must pass `--allow-local-http` to CLI
+   - Must set `allow_network=True` in code
+   - Error message explains how to proceed
+
+3. **Fixture protocol exemption**
+   - `protocol="fixture"` does NOT require `--allow-local-http`
+   - Fixture mode is completely offline
+   - Uses `fixture_transport.py` to simulate responses
+
+4. **Remote endpoint rejection**
+   - Even with `--allow-local-http`, remote endpoints are rejected
+   - Only loopback addresses are allowed
+   - Error message lists allowed endpoints
+
+---
+
 ## Provider Prompt Contract
 
 The **Provider Prompt Contract** (`prompt_contract.py`) defines how providers construct prompts for LLM or template-based analysis.
@@ -214,10 +332,24 @@ The **Provider Prompt Contract** (`prompt_contract.py`) defines how providers co
 - Define prompt templates for storyboard creation
 - Validate prompt structure against the contract schema
 
-**For `local-fixture`:**
-- Uses static/fixture prompt templates
-- No dynamic prompt construction
-- Outputs are predetermined for contract verification
+**For `local-http`:**
+- Builds prompt pack from chunks
+- Renders system and user prompts
+- Embeds output contract and safety rules
+- Sends as JSON payload to local endpoint
+
+**Prompt pack structure:**
+```python
+ProviderPromptPack(
+    task="explain_complex_content",
+    audience_level="general",
+    desired_card_count=8,
+    source_type="txt",  # or "pdf"
+    source_chunks=[...],
+    output_contract={...},  # expected output JSON structure
+    safety_rules=[...],  # preserve source_chunk_ids, etc.
+)
+```
 
 ---
 
@@ -237,10 +369,41 @@ The **Provider Response Contract** (`response_contract.py`) defines the expected
 - Validate `ImageCard` list structure
 - Ensure `source_chunk_ids` traceability
 
-**For `local-fixture`:**
+**For `local-http`:**
 - Returns fixture data that satisfies all contract validations
 - No model inference — purely structural compliance
 - Enables offline contract verification
+- Includes `network` block in `provider_manifest.json`
+
+**Provider manifest with network block:**
+```json
+{
+  "provider": "local-http",
+  "provider_version": "local-http-v0.1",
+  "provider_status": "experimental",
+  "uses_external_api": false,
+  "requires_api_key": false,
+  "capabilities": {
+    "supports_pdf": true,
+    "supports_text": true,
+    "preserves_source_chunk_ids": true
+  },
+  "safety": {
+    "uploads_documents": false,
+    "reads_api_key": false,
+    "writes_secrets": false
+  },
+  "network": {
+    "uses_local_http": false,
+    "allows_remote_http": false,
+    "endpoint": null,
+    "protocol": "fixture",
+    "timeout_seconds": 30
+  }
+}
+```
+
+The `network` block is added automatically when the provider is `local-http`.
 
 ---
 
@@ -273,34 +436,67 @@ cards = transport.get_fixture_cards(storyboard)
 
 ---
 
-## Why local-fixture does not call local HTTP yet
+## Why local-fixture does not call local HTTP (and how local-http does)
 
 The `local-fixture` provider intentionally avoids even localhost HTTP calls (e.g., to Ollama or LM Studio) for several reasons:
 
-### 1. Contract-first development
-The primary goal is to harden the provider contracts (`prompt_contract.py`, `response_contract.py`) before introducing real model inference. Fixture data allows us to verify that:
-- All contract validations pass
-- Output structures are correct
-- Source traceability is preserved
-- Safety boundaries are enforced
+### For local-fixture:
+1. **Contract-first development**
+   The primary goal is to harden the provider contracts (`prompt_contract.py`, `response_contract.py`) before introducing real model inference. Fixture data allows us to verify that:
+   - All contract validations pass
+   - Output structures are correct
+   - Source traceability is preserved
+   - Safety boundaries are enforced
 
-### 2. Offline CI compatibility
-By avoiding all network calls (including localhost), `local-fixture` can run in:
-- Air-gapped environments
-- CI pipelines without local model servers
-- Development environments without Ollama/LM Studio installed
+2. **Offline CI compatibility**
+   By avoiding all network calls (including localhost), `local-fixture` can run in:
+   - Air-gapped environments
+   - CI pipelines without local model servers
+   - Development environments without Ollama/LM Studio installed
 
-### 3. Deterministic testing
-Fixture data provides deterministic outputs, making it possible to:
-- Write precise contract validation tests
-- Verify error handling paths
-- Test edge cases with crafted fixtures
+3. **Deterministic testing**
+   Fixture data provides deterministic outputs, making it possible to:
+   - Write precise contract validation tests
+   - Verify error handling paths
+   - Test edge cases with crafted fixtures
 
-### 4. Separation of concerns
-The transport layer (`fixture_transport.py`) is designed to be swapped. Once contracts are hardened, the same provider can use:
-- `fixture_transport.py` for offline testing
-- `ollama_transport.py` for local Ollama
-- `lm_studio_transport.py` for local LM Studio
+4. **Separation of concerns**
+   The transport layer (`fixture_transport.py`) is designed to be swapped. Once contracts are hardened, the same provider can use:
+   - `fixture_transport.py` for offline testing
+   - `local_http_transport.py` for real HTTP calls to local models
+
+### For local-http:
+The `local-http` provider **does** support localhost HTTP calls, but:
+- **Default: fail closed** — requires explicit `--allow-local-http` opt-in
+- **Loopback only** — only `localhost`, `127.0.0.1`, `::1` are allowed
+- **No remote HTTP** — no HTTPS, no LAN addresses
+- **Fixture mode available** — `protocol="fixture"` for offline CI
+
+```bash
+# Default: fail closed (no HTTP)
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/local_http_test \
+  --provider local-http
+# ERROR: requires --allow-local-http or use --local-http-protocol fixture
+
+# Fixture mode: offline, no HTTP
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/local_http_fixture \
+  --provider local-http \
+  --local-http-protocol fixture
+
+# Real HTTP: requires explicit opt-in
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/ollama_local \
+  --provider local-http \
+  --local-http-protocol ollama-chat \
+  --local-http-endpoint http://localhost:11434/api/chat \
+  --local-http-model llama3.2 \
+  --allow-local-http
+```
 
 ---
 
@@ -313,6 +509,7 @@ The `local-fixture` provider is designed as a stepping stone toward real local m
 | Transport | Description | Status |
 |-----------|-------------|--------|
 | `fixture_transport.py` | Static fixture data | ✅ Implemented |
+| `local_http_transport.py` | Loopback-only HTTP client | ✅ Implemented (fail-closed) |
 | `ollama_transport.py` | Ollama local API | 🔄 Planned |
 | `lm_studio_transport.py` | LM Studio local API | 🔄 Planned |
 

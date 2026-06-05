@@ -9,7 +9,7 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前版本**: v0.1.0-alpha (Phase 3.2A — Local fixture provider)。
+> **当前版本**: v0.1.0-alpha (Phase 3.2B — Local HTTP provider draft)。
 > **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
 > 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
@@ -54,7 +54,7 @@ See [docs/DEMO.md](docs/DEMO.md).
 - 📄 **多格式导出** — JSON / Markdown / HTML
 - 📎 **Clickable Citations** — 每个卡片的 source 区域可点击，跳转到页面底部的 Source Appendix
 - 📊 **Source Index** — `source_index.json` 记录 chunk/card/page 交叉引用
-- 🔌 **Provider Interface** — 可插拔分析后端（rule-based + mock-llm + local-fixture），不调用外部 API
+- 🔌 **Provider Interface** — 可插拔分析后端（rule-based + mock-llm + local-fixture + local-http），不调用外部 API
 - 🧩 **SVG 占位图** — 无外部 API 依赖，纯本地运行
 
 ## 安装
@@ -130,6 +130,12 @@ python -m explainlens.cli analyze --input examples/sample_article.txt --output o
 
 # Debug: dump the provider prompt pack for inspection
 python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/local_fixture_debug --provider local-fixture --dump-provider-prompt
+
+# Local HTTP: fixture mode (offline, no HTTP call)
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/local_http_fixture --provider local-http --local-http-protocol fixture
+
+# Local HTTP: explicit local HTTP opt-in (requires --allow-local-http)
+# python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/ollama_local --provider local-http --local-http-protocol ollama-chat --local-http-endpoint http://localhost:11434/api/chat --local-http-model llama3.2 --allow-local-http
 ```
 
 Provider status:
@@ -139,6 +145,7 @@ Provider status:
 | `rule-based` | Available | no | no |
 | `mock-llm` | Available | no | no |
 | `local-fixture` | experimental | no | no |
+| `local-http` | experimental | local loopback only | no |
 | `openai` | disabled | yes | yes |
 
 No external AI APIs are called in v0.1.x. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for details.
