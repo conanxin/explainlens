@@ -10,8 +10,9 @@
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
 > **当前版本**: v0.1.0-alpha — 本地 MVP。
-> **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
+> **重要说明**：当前版本**不支持 PDF**，**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
+> 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
 
 ---
 
@@ -140,13 +141,24 @@ explainlens/
 - **Phase 5** Web UI
 - **Phase 6** 长图/PPT/视频导出
 
+## 当前限制
+
+v0.1.0-alpha 版本有以下已知限制：
+
+- **不支持 PDF** — 仅接受 `.txt` 和 `.md` 输入
+- **不调用外部 AI API** — 不使用 OpenAI / Anthropic / Ollama 等服务
+- **不生成真实图片** — 输出 SVG 占位图和 image prompts，不接入 Stable Diffusion / DALL-E
+- **无 Web UI** — 仅命令行工具
+- **概念提取为启发式规则** — 不使用 LLM，质量取决于输入文本结构
+
 ## 常见问题
 
 详见 [docs/FAQ.md](docs/FAQ.md)。
 
 ## 版本历史
 
-详见 [CHANGELOG.md](CHANGELOG.md)。
+- [CHANGELOG.md](CHANGELOG.md)
+- [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)
 
 ## 贡献
 
