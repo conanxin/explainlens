@@ -165,3 +165,28 @@ jobs:
       - name: Validate remote endpoint (should fail)
         run: |
           ! python -m explainlens.cli validate-endpoint https://api.openai.com/v1/chat/completions
+
+      - name: Image adapters CLI listing
+        run: |
+          python -m explainlens.cli image-adapters
+
+      - name: Smoke test image adapter (placeholder)
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_image_placeholder \
+            --image-adapter placeholder
+          test -f outputs/ci_image_placeholder/image_jobs.json
+          test -f outputs/ci_image_placeholder/image_manifest.json
+          grep -q '"uses_external_api": false' outputs/ci_image_placeholder/image_manifest.json
+          grep -q 'images/card_' outputs/ci_image_placeholder/cards.html
+          grep -q 'Source Appendix' outputs/ci_image_placeholder/cards.html
+
+      - name: Smoke test image adapter (skip)
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_image_skip \
+            --skip-images
+          test -f outputs/ci_image_skip/image_jobs.json
+          test ! -f outputs/ci_image_skip/image_manifest.json

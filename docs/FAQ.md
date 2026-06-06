@@ -480,19 +480,30 @@ python -m explainlens.cli analyze --input doc.txt --output out/ --provider mock-
 
 ## 后续如何接入图片生成？
 
-Phase 4 将提供图片生成适配器，结构类似：
+Phase 4A 已建立图片生成适配器接口（`src/explainlens/images/`），目前实现：
 
-```python
-class ImageGenAdapter(ABC):
-    @abstractmethod
-    def generate(self, prompt: str) -> bytes: ...
+- **`placeholder`** — 生成本地 SVG 占位图（默认，available）
+- **`fixture`** — 确定性 SVG 用于 CI/测试（experimental）
+
+可以通过 CLI 控制：
+
+```bash
+# 使用默认 placeholder 适配器
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/demo
+
+# 列出所有图片适配器
+python -m explainlens.cli image-adapters
+
+# 跳过图片生成（回退到 inline SVG）
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/nopic --skip-images
 ```
 
-适配器实现：
+Phase 4 将在此接口基础上添加真实图片生成适配器：
 
 - `StableDiffusionAdapter` — 调用本地 SD WebUI API
 - `DALLEAdapter` — 调用 OpenAI DALL-E API
-- `PlaceholderAdapter` — 当前 SVG 占位图（默认）
+
+当前所有 adapters 均为纯本地 SVG 生成，不调用外部图片 API。
 
 ---
 

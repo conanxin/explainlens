@@ -28,6 +28,35 @@ When future phases add real image generation API support:
 - Use `.env.example` as a template, never commit your actual `.env`
 - Rotate keys if accidentally committed
 
+### Image Adapter Safety (Phase 4A)
+
+**Status:** local-only — no external image APIs are called.
+
+**Current image adapters:**
+
+| Adapter | Status | External API | API key | Description |
+|---------|--------|-------------|---------|-------------|
+| placeholder | available | no | no | Generates local SVG placeholder images |
+| fixture | experimental | no | no | Deterministic SVG for CI/testing |
+
+**Safety guarantees:**
+
+1. **No external image APIs.**
+   - Both `placeholder` and `fixture` adapters generate SVG files purely locally.
+   - No network requests, no API keys, no external services.
+
+2. **Transparent manifest.**
+   - `image_manifest.json` discloses `uses_external_api: false` and `requires_api_key: false`.
+   - Every image record includes `safety_notes` confirming local-only generation.
+
+3. **No real images.**
+   - Phase 4A does NOT call DALL-E, Stable Diffusion, or any other image generation API.
+   - Generated SVGs are simple educational illustrations — no photorealistic content.
+
+4. **No document upload.**
+   - Image adapters only consume card metadata (title, prompt) — source text is never sent to external services.
+   - Prompt content is limited to card titles and visual metaphor descriptions.<｜end▁of▁thinking｜>
+
 ## Provider Safety
 
 ### External API providers must be opt-in

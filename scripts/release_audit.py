@@ -489,6 +489,46 @@ def main() -> int:
                       "Release notes must document no real image generation")
     print()
 
+    # --- Image Adapter Interface (Phase 4A) ---
+    print(">>> Image Adapter Interface (Phase 4A)")
+    all_pass &= check("src/explainlens/images/base.py exists",
+                      file_exists("src/explainlens/images/base.py"),
+                      "Image adapter base must exist")
+    all_pass &= check("src/explainlens/images/placeholder.py exists",
+                      file_exists("src/explainlens/images/placeholder.py"),
+                      "Placeholder image adapter must exist")
+    all_pass &= check("src/explainlens/images/fixture.py exists",
+                      file_exists("src/explainlens/images/fixture.py"),
+                      "Fixture image adapter must exist")
+    all_pass &= check("src/explainlens/images/registry.py exists",
+                      file_exists("src/explainlens/images/registry.py"),
+                      "Image adapter registry must exist")
+    all_pass &= check("README contains image adapters",
+                      file_contains("README.md", r"[Ii]mage adapters"),
+                      "README must mention image adapters")
+    all_pass &= check("SECURITY says no external image APIs",
+                      file_contains("docs/SECURITY.md", r"[Ii]mage [Aa]dapter.*local-only|no external image"),
+                      "SECURITY must state no external image APIs")
+    all_pass &= check("CLI image-adapters command exists",
+                      file_contains("src/explainlens/cli.py", r"image-adapters"),
+                      "CLI must have image-adapters subcommand")
+    all_pass &= check("CI has image adapter smoke test",
+                      file_contains(".github/workflows/ci.yml", r"ci_image"),
+                      "CI must test image adapter")
+    all_pass &= check("CI checks image_manifest.json exists",
+                      file_contains(".github/workflows/ci.yml", r"image_manifest\.json"),
+                      "CI must verify image_manifest.json generation")
+    all_pass &= check("CI checks image_jobs.json exists",
+                      file_contains(".github/workflows/ci.yml", r"image_jobs\.json"),
+                      "CI must verify image_jobs.json generation")
+    all_pass &= check("CI checks uses_external_api false in image manifest",
+                      file_contains(".github/workflows/ci.yml", r'"uses_external_api":\s*false.*image_manifest'),
+                      "CI must verify uses_external_api: false in image manifest")
+    all_pass &= check("CI checks images/ in cards.html",
+                      file_contains(".github/workflows/ci.yml", r"images/card_"),
+                      "CI must verify cards.html references images/")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

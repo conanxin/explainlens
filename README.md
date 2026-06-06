@@ -173,6 +173,36 @@ examples/configs/local-http-llamacpp.example.json
 
 See [docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md) for the full guide.
 
+## Image adapters
+
+ExplainLens includes local image adapter scaffolding for generating card illustrations.
+
+```bash
+# Default: placeholder adapter (generates SVG images locally)
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/image_demo \
+  --image-adapter placeholder
+
+# List available image adapters
+python -m explainlens.cli image-adapters
+
+# Skip image generation entirely
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/no_image \
+  --skip-images
+```
+
+Current image adapters:
+
+| Adapter     | Status       | External API | API key required |
+| ----------- | ------------ | ------------ | ---------------- |
+| placeholder | available    | no           | no               |
+| fixture     | experimental | no           | no               |
+
+Real image generation is not enabled yet.
+
 ## 输出文件
 
 运行后，输出目录包含：
@@ -189,6 +219,8 @@ See [docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md) for the full guide.
 | `cards.json` | 最终卡片数据 |
 | `cards.md` | Markdown 格式卡片 |
 | `cards.html` | 浏览器可预览的 HTML 卡片 |
+| `image_jobs.json` | 图片生成任务列表 |
+| `image_manifest.json` | 图片生成清单（含安全声明） |
 | `run_summary.json` | 运行摘要 |
 
 ## 运行测试
@@ -214,6 +246,13 @@ explainlens/
 │   ├── source_index.py # 来源索引与 citation
 │   ├── schemas.py      # 数据模型
 │   ├── cli.py          # CLI 入口
+│   ├── images/         # 图片适配器接口
+│   │   ├── base.py     # 抽象接口
+│   │   ├── placeholder.py # 本地 SVG 占位图生成
+│   │   ├── fixture.py  # 离线 fixture 适配器（CI/测试）
+│   │   ├── registry.py # 图片适配器注册中心
+│   │   ├── jobs.py     # image_jobs.json 生成
+│   │   └── manifest.py # image_manifest.json 生成
 │   └── providers/      # Provider 适配器接口
 │       ├── base.py     # 抽象接口
 │       ├── contract.py # 能力声明 + 输出校验
@@ -248,7 +287,8 @@ explainlens/
 - **Phase 3.2B** ✅ Local HTTP provider (loopback-only, fail-closed)
 - **Phase 3.2C** ✅ Local provider UX polish (doctor, validate-endpoint, config templates)
 - **Phase 3.3** ✅ OpenAI provider opt-in (experimental, fail-closed)
-- **Phase 3.4** 🔄 v0.2.0-alpha release hardening
+- **Phase 3.4** ✅ v0.2.0-alpha release hardening
+- **Phase 4A** 🔄 Image adapter interface (placeholder + fixture)
 - **Phase 4** 真实图片生成适配器
 - **Phase 5** Web UI
 - **Phase 6** 长图/PPT/视频导出
@@ -263,6 +303,7 @@ explainlens/
 - **local-http provider 为 experimental** — 仅允许 loopback 端点
 - **默认不调用外部 API** — rule-based / mock-llm / local-fixture 完全离线
 - **不生成真实图片** — 输出 SVG 占位图和 image prompts，不接入 Stable Diffusion / DALL-E
+- **Image adapter 仅本地** — placeholder/fixture adapter 均为纯本地 SVG，不调用外部图片 API
 - **无 Web UI** — 仅命令行工具
 - **概念提取为启发式规则** — 不使用 LLM（默认 provider），质量取决于输入文本结构
 

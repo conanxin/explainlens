@@ -166,8 +166,54 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     print(f"   -> Created {len(cards)} explainer cards")
     write_json([c.model_dump() for c in cards], output_dir / "cards.json")
 
+    # 8b. Image generation (via image adapter)
+    from explainlens.images import (
+        get_image_adapter,
+        write_image_jobs,
+        write_image_manifest,
+    )
+
+    skip_images = getattr(args, "skip_images", False)
+    image_adapter_name = getattr(args, "image_adapter", "placeholder")
+    image_style = getattr(args, "image_style", "clean-cartoon-explainer")
+    image_records: list[dict] = []
+    img_adapter = None
+
+    if skip_images:
+        print(f"   -> Image generation skipped (--skip-images)")
+        write_image_jobs(cards, output_dir, skipped=True)
+    else:
+        try:
+            img_adapter = get_image_adapter(image_adapter_name)
+            print(f"   -> Image adapter: {img_adapter.name} ({img_adapter.version})")
+            write_image_jobs(
+                cards, output_dir,
+                adapter=img_adapter.name,
+                style=image_style,
+            )
+            image_records = img_adapter.generate_images(
+                cards, output_dir, style=image_style,
+            )
+            print(f"   -> Generated {len(image_records)} images")
+            write_image_manifest(
+                image_records,
+                output_dir,
+                adapter=img_adapter.name,
+                adapter_version=img_adapter.version,
+                uses_external_api=img_adapter.uses_external_api,
+                requires_api_key=img_adapter.requires_api_key,
+            )
+        except ValueError as e:
+            print(f"Image adapter error: {e}", file=sys.stderr)
+            return 1
+
     # 9. Export Markdown
-    cards_md = export_cards_markdown(cards, chunks=chunks)
+    cards_md = export_cards_markdown(
+        cards,
+        chunks=chunks,
+        image_adapter=image_adapter_name if not skip_images else None,
+        skip_images=skip_images,
+    )
     write_text(cards_md, output_dir / "cards.md")
 
     # 10. Export HTML
@@ -176,6 +222,13 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         input_title=input_path.name,
         chunk_count=len(chunks),
         chunks=chunks,
+        image_adapter=image_adapter_name if not skip_images else None,
+        image_adapter_version=(
+            img_adapter.version if img_adapter is not None else None
+        ),
+        uses_external_image_api=(
+            img_adapter.uses_external_api if img_adapter is not None else False
+        ),
     )
     write_text(cards_html, output_dir / "cards.html")
 
@@ -207,7 +260,10 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         "cards.md",
         "cards.html",
         "provider_manifest.json",
+        "image_jobs.json",
     ]
+    if not skip_images and image_records:
+        output_files.append("image_manifest.json")
     if source_type == "pdf":
         output_files.insert(0, "source_pages.json")
 
@@ -231,6 +287,14 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         provider=provider.name,
         provider_version=provider.version,
         uses_external_api=provider.uses_external_api,
+        image_adapter=image_adapter_name if not skip_images else None,
+        image_adapter_version=(
+            img_adapter.version if img_adapter is not None else None
+        ),
+        image_count=len(image_records),
+        uses_external_image_api=(
+            img_adapter.uses_external_api if img_adapter is not None else False
+        ),
         warnings=warnings,
         source_quality=source_quality,
     )
@@ -240,6 +304,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     print()
     print("ExplainLens run complete")
     print(f"  Provider:     {provider.name}")
+    print(f"  Image adapter: {image_adapter_name if not skip_images else 'skipped'}")
     print(f"  Input type:   {source_type}")
     if source_type == "pdf":
         print(f"  Pages:        {len(pages)}")
@@ -435,6 +500,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     print("  - source_index.json: supported")
     print("  - provider_manifest.json: supported")
     print("  - provider_prompt_pack.json: supported with --dump-provider-prompt")
+    print("  - image_jobs.json: supported")
+    print("  - image_manifest.json: supported")
+
+    # Image adapters
+    print("\nImage adapters:")
+    from explainlens.images import list_image_adapters
+    for info in list_image_adapters():
+        name = info["name"]
+        status = info["status"]
+        print(f"  - {name}: {status}")
+
+    print("\nImage generation:")
+    print("  - Default adapter: placeholder")
+    print("  - External image APIs: disabled")
+    print("  - Real image generation: not implemented")
 
     print("\nDoctor check complete. No issues found.")
     return 0
@@ -484,6 +564,24 @@ def cmd_validate_endpoint(args: argparse.Namespace) -> int:
             print("Allowed: no")
             print(f"Reason: invalid URL: {e}")
             return 1
+
+
+def cmd_image_adapters(args: argparse.Namespace) -> int:
+    """List all available image adapters."""
+    from explainlens.images import list_image_adapters
+
+    print("Available image adapters:\n")
+    for info in list_image_adapters():
+        name = info["name"]
+        ext_api = "yes" if info["uses_external_api"] else "no"
+        needs_key = "yes" if info["requires_api_key"] else "no"
+        status = info["status"]
+        print(f"  - {name}")
+        print(f"    Status:       {status}")
+        print(f"    External API: {ext_api}")
+        print(f"    Requires API key: {needs_key}")
+        print()
+    return 0
 
 
 def _provider_requires_key(name: str) -> bool:
@@ -581,6 +679,23 @@ def main() -> None:
         default=60.0,
         help="Timeout for OpenAI API calls in seconds (default: 60.0)",
     )
+    analyze_parser.add_argument(
+        "--image-adapter",
+        default="placeholder",
+        choices=["placeholder", "fixture"],
+        help="Image adapter for card illustrations (default: placeholder)",
+    )
+    analyze_parser.add_argument(
+        "--image-style",
+        default="clean-cartoon-explainer",
+        help="Visual style for generated images (default: clean-cartoon-explainer)",
+    )
+    analyze_parser.add_argument(
+        "--skip-images",
+        action="store_true",
+        default=False,
+        help="Skip image generation entirely (cards.html falls back to inline SVG)",
+    )
 
     # providers subcommand
     providers_parser = subparsers.add_parser(
@@ -601,6 +716,11 @@ def main() -> None:
         help="Endpoint URL to validate (e.g., http://localhost:11434/api/chat)",
     )
 
+    # image-adapters subcommand
+    subparsers.add_parser(
+        "image-adapters", help="List all available image adapters"
+    )
+
     args = parser.parse_args()
 
     if args.command == "analyze":
@@ -611,6 +731,8 @@ def main() -> None:
         sys.exit(cmd_doctor(args))
     elif args.command == "validate-endpoint":
         sys.exit(cmd_validate_endpoint(args))
+    elif args.command == "image-adapters":
+        sys.exit(cmd_image_adapters(args))
     else:
         parser.print_help()
         sys.exit(1)

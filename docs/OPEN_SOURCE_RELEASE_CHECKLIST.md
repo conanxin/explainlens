@@ -1,6 +1,6 @@
 # Open Source Release Checklist
 
-Last updated: 2026-06-06 for v0.2.0-alpha
+Last updated: 2026-06-06 for v0.2.0-alpha (incl. Phase 4A image adapter interface)
 
 ---
 

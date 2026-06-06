@@ -147,6 +147,28 @@
 - [ ] Provider configuration via environment variables (`EXPLAINLENS_PROVIDER`)
 - [ ] Structured output mode for OpenAI provider
 
+## Phase 4A: Image Adapter Interface (Local)
+
+**In Progress**
+
+- [x] Image adapter abstract interface (`src/explainlens/images/base.py`)
+- [x] `placeholder` image adapter — generates local SVG placeholder images
+- [x] `fixture` image adapter — deterministic SVG for CI/testing
+- [x] Image adapter registry (`get_image_adapter`, `list_image_adapters`)
+- [x] `image_jobs.json` output
+- [x] `image_manifest.json` output (safety declarations)
+- [x] `--image-adapter`, `--image-style`, `--skip-images` CLI options
+- [x] `image-adapters` CLI command
+- [x] Image references in HTML and Markdown exports
+- [x] Doctor command includes image adapter status
+- [x] Release audit checks for image adapters
+
+**Constraints:**
+- No external image APIs called
+- No real image generation (DALL-E / Stable Diffusion)
+- All image adapters are local-only
+- Default adapter: placeholder
+
 ## Phase 4: Real Image Generation Adapter
 
 **Planned**

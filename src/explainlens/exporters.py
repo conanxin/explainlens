@@ -64,7 +64,12 @@ def _page_info(chunk_ids: List[str], chunks: Optional[List[SourceChunk]] = None)
     return f" pages {sorted_pages[0]}-{sorted_pages[-1]}"
 
 
-def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] = None) -> str:
+def export_cards_markdown(
+    cards: List[Any],
+    chunks: Optional[List[SourceChunk]] = None,
+    image_adapter: Optional[str] = None,
+    skip_images: bool = False,
+) -> str:
     """Export cards as a Markdown document with source appendix.
 
     Each card's source section uses clickable-style citation labels.
@@ -73,6 +78,8 @@ def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] 
     Args:
         cards: List of ImageCard objects.
         chunks: Optional list of SourceChunk objects for page info and appendix.
+        image_adapter: Name of image adapter used (None if skipped or default).
+        skip_images: Whether image generation was skipped.
 
     Returns:
         Markdown string.
@@ -98,6 +105,12 @@ def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] 
         lines.append("")
         lines.append(f"> **Takeaway**：{card.takeaway}")
         lines.append("")
+
+        # Image reference (if image adapter was used)
+        if not skip_images and image_adapter:
+            lines.append(f"![{card.card_id}](images/{card.card_id}.svg)")
+            lines.append("")
+
         lines.append(f"**图片 Prompt**：")
         lines.append(f"```")
         lines.append(card.image_prompt)
@@ -118,6 +131,15 @@ def export_cards_markdown(cards: List[Any], chunks: Optional[List[SourceChunk]] 
 
         lines.append("---")
         lines.append("")
+
+    if skip_images:
+        lines.insert(5, "")
+        lines.insert(6, "Image generation skipped.")
+        lines.insert(7, "")
+    elif image_adapter:
+        lines.insert(5, "")
+        lines.insert(6, f"Image adapter: {image_adapter}")
+        lines.insert(7, "")
 
     # Source Appendix
     if chunks:

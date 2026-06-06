@@ -11,7 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- (next features will be added here)
+- Image adapter interface (`src/explainlens/images/`).
+- `placeholder` image adapter (local SVG generation, available).
+- `fixture` image adapter (deterministic SVG for CI/testing, experimental).
+- `image_jobs.json` output for each analysis run.
+- `image_manifest.json` output (with safety declarations).
+- `--image-adapter`, `--image-style`, and `--skip-images` CLI options.
+- `image-adapters` CLI command.
+- Image references in HTML and Markdown exports.
+- Image adapter info in `run_summary.json`.
+- Doctor command includes image adapter status.
+
+### Security
+
+- Image adapters default to local SVG generation.
+- No external image APIs are called.
+- `image_manifest.json` discloses `uses_external_api: false`.
 
 ---
 
