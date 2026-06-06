@@ -160,15 +160,16 @@ def capabilities_for_mock_llm() -> ProviderCapabilities:
 def capabilities_for_openai() -> ProviderCapabilities:
     return ProviderCapabilities(
         name="openai",
-        version="openai-draft-v0.1",
-        status="disabled",
+        version="openai-v0.1",
+        status="experimental",
         uses_external_api=True,
         requires_api_key=True,
         supports_pdf=True,
         supports_text=True,
         preserves_source_chunk_ids=True,
-        description="OpenAI GPT API adapter (DISABLED — not implemented yet). "
-        "Will call external OpenAI API when enabled in a future release.",
+        description="OpenAI Responses API provider (experimental). "
+        "Requires --allow-external-api and OPENAI_API_KEY. "
+        "Calls external OpenAI API when explicitly opted in.",
     )
 
 

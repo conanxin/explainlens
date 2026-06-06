@@ -34,10 +34,10 @@ class TestProviderCapabilities:
         assert caps is not None
         assert caps.status == "available"
 
-    def test_openai_caps_status_disabled(self):
+    def test_openai_caps_status_experimental(self):
         caps = get_provider_capabilities("openai")
         assert caps is not None
-        assert caps.status == "disabled"
+        assert caps.status == "experimental"
 
     def test_openai_requires_api_key(self):
         caps = get_provider_capabilities("openai")
@@ -325,7 +325,7 @@ class TestRegistryIntegration:
         caps = get_provider_capabilities("openai")
         assert caps is not None
         assert caps.name == "openai"
-        assert caps.status == "disabled"
+        assert caps.status == "experimental"
 
     def test_list_provider_capabilities_count(self):
         caps_list = list_provider_capabilities()
@@ -341,11 +341,12 @@ class TestRegistryIntegration:
         assert is_provider_available("mock-llm") is True
 
     def test_is_provider_available_openai(self):
-        assert is_provider_available("openai") is False
+        assert is_provider_available("openai") is True
 
-    def test_get_provider_raises_for_openai(self):
-        with pytest.raises((ValueError, RuntimeError)):
-            get_provider("openai")
+    def test_get_provider_does_not_raise_for_openai(self):
+        """get_provider('openai') should succeed now that it's available (experimental)."""
+        provider = get_provider("openai")
+        assert provider is not None
 
     def test_get_provider_raises_for_unknown(self):
         with pytest.raises(ValueError):

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -55,13 +56,45 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     if hasattr(provider, "endpoint") and args.local_http_endpoint is not None:
         provider.endpoint = args.local_http_endpoint
     if hasattr(provider, "model"):
-        provider.model = args.local_http_model
+        if args.provider == "openai":
+            provider.model = args.openai_model
+        else:
+            provider.model = args.local_http_model
     if hasattr(provider, "protocol"):
         provider.protocol = args.local_http_protocol
     if hasattr(provider, "allow_network"):
         provider.allow_network = args.allow_local_http
+    if hasattr(provider, "allow_external_api"):
+        provider.allow_external_api = args.allow_external_api
     if hasattr(provider, "timeout_seconds"):
-        provider.timeout_seconds = args.local_http_timeout
+        if args.provider == "openai":
+            provider.timeout_seconds = args.openai_timeout
+        else:
+            provider.timeout_seconds = args.local_http_timeout
+
+    # 0c. Fail-closed check for external API providers
+    if hasattr(provider, "allow_external_api") and not provider.allow_external_api:
+        print(
+            f"Provider error: {provider.name} is fail-closed by default.\n"
+            f"To enable it, set OPENAI_API_KEY and pass --allow-external-api.\n"
+            f"No request was sent.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # 0d. For external API providers, validate API key BEFORE creating output
+    if hasattr(provider, "allow_external_api") and provider.allow_external_api:
+        # Check if API key is available (without printing it)
+        # For openai provider, check OPENAI_API_KEY
+        if provider.name == "openai":
+            api_key = os.environ.get("OPENAI_API_KEY", "")
+            if not api_key:
+                print(
+                    "Provider error: OPENAI_API_KEY is not set.\n"
+                    "No request was sent.",
+                    file=sys.stderr,
+                )
+                return 1
 
     print(f"Reading: {input_path}")
     print(f"Output:  {output_dir}")
@@ -286,8 +319,8 @@ def _write_provider_manifest(output_dir: Path, provider) -> None:
         "safety": caps.safety_manifest(),
     }
 
-    # Add network block for local-http provider
-    if provider.name == "local-http":
+    # Add network block for providers that support it
+    if provider.name in ("local-http", "openai"):
         network = {
             "uses_local_http": False,
             "allows_remote_http": False,
@@ -389,6 +422,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     print("  - Remote endpoints: rejected")
     print("  - Authorization headers: never sent")
     print("  - Real local model check: skipped by default")
+
+    # OpenAI
+    print("\nOpenAI:")
+    print("  - Status: experimental")
+    print("  - Default access: disabled")
+    print("  - Requires: --allow-external-api + OPENAI_API_KEY")
+    print("  - CI real API calls: disabled")
 
     # Artifacts
     print("\nArtifacts:")
@@ -523,6 +563,23 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Dump the provider prompt pack to provider_prompt_pack.json for debugging",
+    )
+    analyze_parser.add_argument(
+        "--allow-external-api",
+        action="store_true",
+        default=False,
+        help="Allow calling external APIs (required for openai provider)",
+    )
+    analyze_parser.add_argument(
+        "--openai-model",
+        default="gpt-5.5",
+        help="Model name for OpenAI provider (default: gpt-5.5)",
+    )
+    analyze_parser.add_argument(
+        "--openai-timeout",
+        type=float,
+        default=60.0,
+        help="Timeout for OpenAI API calls in seconds (default: 60.0)",
     )
 
     # providers subcommand

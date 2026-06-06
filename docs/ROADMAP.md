@@ -123,11 +123,26 @@
 - [x] Updated `scripts/release_audit.py` — 10 new Phase 3.2C checks
 - [x] Updated `.github/workflows/ci.yml` — doctor + validate-endpoint checks
 
-## Phase 3.3: OpenAI Opt-in Provider
+## Phase 3.3: OpenAI Opt-in Provider ✅
 
-**Status: Remaining**
+**Status: Complete**
 
-- [ ] OpenAI opt-in provider
+- [x] `openai_transport.py` — direct HTTP transport for OpenAI Responses API
+- [x] `openai_draft.py` — `OpenAIProvider` class (no `import openai` SDK dependency)
+- [x] `openai` moved from `DISABLED_PROVIDERS` to `AVAILABLE_PROVIDERS`
+- [x] `openai` status in contract.py: `"experimental"`
+- [x] Fail-closed by default — requires `--allow-external-api` + `OPENAI_API_KEY`
+- [x] CLI pre-validation: API key checked BEFORE `output_dir.mkdir()` (fail-closed ordering)
+- [x] Provider manifest: `uses_external_api: true`, `requires_api_key: true`
+- [x] 4 new test files (81 tests, all mock-based — zero real API calls):
+  - `test_openai_transport.py` (31 tests)
+  - `test_openai_provider.py` (15 tests)
+  - `test_openai_cli.py` (9 tests)
+  - `test_openai_security.py` (16 tests)
+- [x] Legacy test migration (7 tests updated from "disabled" to "experimental")
+- [x] CI updated — fail-closed tests + providers listing check
+- [x] Release audit updated — 11 new Phase 3.3 checks
+- [x] Documentation updated — PROVIDERS.md, SECURITY.md, FAQ.md, ROADMAP.md
 
 ### Remaining for Phase 3.x
 

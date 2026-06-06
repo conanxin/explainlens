@@ -48,16 +48,16 @@ class TestDoctorCLI:
             f"stdout: {result.stdout}"
         )
 
-    def test_doctor_output_contains_openai_disabled(self):
-        """doctor output should mention openai is disabled."""
+    def test_doctor_output_contains_openai_experimental(self):
+        """doctor output should mention openai is experimental."""
         result = _run_cli(["doctor"])
         output = result.stdout.lower()
         assert "openai" in output, (
             "doctor output should mention openai\n"
             f"stdout: {result.stdout}"
         )
-        assert "disabled" in output, (
-            "doctor output should mention disabled\n"
+        assert "experimental" in output, (
+            "doctor output should mention experimental\n"
             f"stdout: {result.stdout}"
         )
 

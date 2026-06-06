@@ -5,7 +5,7 @@ from explainlens.providers.contract import (
     ProviderCapabilities,
     validate_provider_output,
 )
-from explainlens.providers.openai_draft import OpenAIDraftProvider
+from explainlens.providers.openai_draft import OpenAIProvider
 from explainlens.providers.local_fixture import LocalFixtureProvider
 from explainlens.providers.local_http import LocalHttpProvider
 from explainlens.providers.prompt_contract import (
@@ -41,7 +41,7 @@ __all__ = [
     "ExplainProvider",
     "ProviderCapabilities",
     "validate_provider_output",
-    "OpenAIDraftProvider",
+    "OpenAIProvider",
     "LocalFixtureProvider",
     "LocalHttpProvider",
     "ProviderPromptChunk",

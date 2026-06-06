@@ -33,8 +33,33 @@ When future phases add real image generation API support:
 ### External API providers must be opt-in
 
 - Providers that make network requests must NOT be enabled by default
+- The `openai` provider is fail-closed — requires `--allow-external-api` + `OPENAI_API_KEY`
 - Disabled providers must fail closed (no partial output)
 - Attempting to use a disabled provider must produce a clear error message
+
+### OpenAI Provider Security (Phase 3.3)
+
+**Status:** experimental — requires explicit opt-in.
+
+**Safety rules:**
+
+1. **API key via environment variable only.**
+   - Uses `OPENAI_API_KEY` env var — no hardcoded keys in source
+   - Key is validated BEFORE any output directory is created (fail-closed ordering)
+
+2. **No SDK dependency.**
+   - Uses direct HTTP (`urllib.request`) to `api.openai.com`
+   - No `import openai` — avoids SDK code risk surface
+   - No API key appears in payload, headers, or error messages
+
+3. **Mock-only testing.**
+   - All 81 OpenAI tests (4 test files) use `unittest.mock` — zero real API calls
+   - CI fail-closed tests run without any `OPENAI_API_KEY` set
+
+4. **Provider manifest disclosure.**
+   - `uses_external_api: true`, `requires_api_key: true`
+   - `safety.uploads_documents: true` (documents are sent to OpenAI API)
+   - Manifest is regenerated on every run
 
 ### Provider manifest must disclose external API usage
 

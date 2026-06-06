@@ -55,7 +55,9 @@ class TestProviderRegistry:
         for p in providers:
             assert "version" in p
             assert "uses_external_api" in p
-            assert p["uses_external_api"] is False
+            # Non-external providers should have uses_external_api=False
+            if p["name"] not in ("openai", "local-http"):
+                assert p["uses_external_api"] is False
 
 
 class TestExplainProvider:

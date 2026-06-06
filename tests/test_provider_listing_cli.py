@@ -60,10 +60,10 @@ class TestProviderListingCLI:
         # "available" should appear for rule-based / mock-llm
         assert "available" in stdout.lower()
 
-    def test_providers_shows_status_disabled(self):
+    def test_providers_shows_status_experimental(self):
         exit_code, stdout = _run_cli_providers()
-        # "disabled" should appear for openai
-        assert "disabled" in stdout.lower()
+        # "experimental" should appear for openai
+        assert "experimental" in stdout.lower()
 
     def test_providers_shows_external_api_info(self):
         exit_code, stdout = _run_cli_providers()
@@ -134,15 +134,15 @@ class TestProviderAnalyzeCLI:
             assert not (output_dir / "run_summary.json").exists()
 
     def test_openai_provider_error_message_clear(self):
-        """Error message should mention 'disabled' or 'not enabled'."""
-        from explainlens.providers.openai_draft import OpenAIDraftProvider
+        """Error message should mention 'fail-closed' and guidance."""
+        from explainlens.providers.openai_draft import OpenAIProvider
 
-        provider = OpenAIDraftProvider()
+        provider = OpenAIProvider()
         try:
             provider.build_concept_map([])
         except RuntimeError as e:
             msg = str(e)
-            assert "disabled" in msg.lower() or "not enabled" in msg.lower()
+            assert "fail-closed" in msg.lower() or "not enabled" in msg.lower()
 
 
 class TestProviderManifestInOutput:

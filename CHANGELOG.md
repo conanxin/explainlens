@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Phase 3.3 — OpenAI provider opt-in draft (experimental).**
+  - `openai` provider: experimental opt-in provider that calls OpenAI Responses API via standard-library `urllib`.
+  - FAIL-CLOSED by default: requires `--allow-external-api` CLI flag AND `OPENAI_API_KEY` env var.
+  - OpenAI transport layer (`openai_transport.py`): builds payloads, calls API, extracts structured responses.
+  - Response extraction supports Form A (direct `output_text`) and Form B (output list content).
+  - `--openai-model` and `--openai-timeout` CLI options.
+  - Provider manifest includes `uses_external_api: true` and network disclosure.
+  - `providers` command shows `openai` as `experimental`.
+  - `doctor` command displays OpenAI fail-closed status.
+  - 4 new test files: `test_openai_transport.py`, `test_openai_provider.py`, `test_openai_cli.py`, `test_openai_security.py`.
+  - All OpenAI tests use mock fixtures — zero real API calls.
 - Provider adapter interface (`ExplainProvider` base class).
 - `rule-based` provider wrapping existing heuristic pipeline.
 - `mock-llm` provider for local testing of the provider interface.

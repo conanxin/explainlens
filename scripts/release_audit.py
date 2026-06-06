@@ -53,6 +53,9 @@ def grep_source(pattern: str) -> list[Path]:
                 continue
             if ".pytest_cache" in f.parts or ".workbuddy" in f.parts:
                 continue
+            # Docs contain legitimate usage examples (e.g. "export OPENAI_API_KEY=...")
+            if "docs" in f.parts or ".github" in f.parts:
+                continue
             try:
                 content = f.read_text(encoding="utf-8")
             except UnicodeDecodeError:
@@ -147,7 +150,7 @@ def main() -> int:
 
     secret_patterns = [
         (r"sk-[a-zA-Z0-9]{20,}", "OpenAI API key (sk-...)"),
-        (r"OPENAI_API_KEY\s*=", "OPENAI_API_KEY assignment"),
+        (r"OPENAI_API_KEY\s*=\s*['\"]", "OPENAI_API_KEY assignment"),
         (r"password\s*=\s*['\"]\S+['\"]", "hardcoded password"),
         (r"token\s*=\s*['\"]\S+['\"]", "hardcoded token"),
         (r"secret\s*=\s*['\"]\S+['\"]", "hardcoded secret"),
@@ -288,11 +291,11 @@ def main() -> int:
     all_pass &= check(".env.example has no real API key",
                       not file_contains(".env.example", r"sk-[a-zA-Z0-9]{20,}"),
                       ".env.example must not contain real API keys")
-    # Check that openai provider is disabled (error message exists in source)
-    openai_disabled = grep_source(r"Provider.*openai.*disabled")
-    all_pass &= check("disabled OpenAI provider cannot run",
-                      len(openai_disabled) > 0,
-                      "OpenAI provider must be disabled with clear error")
+    # openai moved to experimental in Phase 3.3
+    all_pass &= check("openai provider is in AVAILABLE_PROVIDERS",
+                      file_contains("src/explainlens/providers/registry.py",
+                                    r'AVAILABLE_PROVIDERS\["openai"\]'),
+                      "openai must be in AVAILABLE_PROVIDERS, not DISABLED_PROVIDERS")
     print()
 
     # --- Local Fixture Provider (Phase 3.2A) ---
@@ -393,6 +396,54 @@ def main() -> int:
     all_pass &= check("SECURITY contains Authorization headers",
                       file_contains("docs/SECURITY.md", r"Authorization header"),
                       "SECURITY.md must mention Authorization headers safety")
+    print()
+
+    # --- OpenAI Provider (Phase 3.3) ---
+    print(">>> OpenAI Provider (Phase 3.3)")
+    all_pass &= check("openai_transport.py exists",
+                      file_exists("src/explainlens/providers/openai_transport.py"),
+                      "OpenAI transport module must exist")
+    all_pass &= check("openai_draft.py contains OpenAIProvider class",
+                      file_contains("src/explainlens/providers/openai_draft.py",
+                                    r"class OpenAIProvider"),
+                      "openai_draft.py must define OpenAIProvider class")
+    all_pass &= check("openai is in AVAILABLE_PROVIDERS",
+                      file_contains("src/explainlens/providers/registry.py",
+                                    r'AVAILABLE_PROVIDERS\["openai"\]'),
+                      "openai must be in AVAILABLE_PROVIDERS")
+    all_pass &= check("openai status is experimental",
+                      file_contains("src/explainlens/providers/contract.py",
+                                    r"capabilities_for_openai"),
+                      "contract.py must define capabilities_for_openai() with status='experimental'")
+    all_pass &= check("README shows openai as experimental",
+                      file_contains("README.md", r"openai.*[Ee]xperimental"),
+                      "README provider table must show openai as experimental")
+    all_pass &= check("No import openai library in OpenAI source",
+                      not file_contains("src/explainlens/providers/openai_transport.py",
+                                        r"^import openai\b"),
+                      "openai_transport.py uses direct HTTP, must not import openai library")
+    all_pass &= check("CLI --allow-external-api flag exists",
+                      file_contains("src/explainlens/cli.py",
+                                    r"--allow-external-api"),
+                      "CLI must support --allow-external-api flag")
+    all_pass &= check("CLI help shows --allow-external-api",
+                      file_contains("src/explainlens/cli.py",
+                                    r"help.*[Aa]llow.*external.*API"),
+                      "CLI --help must describe --allow-external-api")
+    all_pass &= check("OpenAI fail-closed tests in CI",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"allow-external-api"),
+                      "CI must test OpenAI fail-closed behavior")
+    all_pass &= check("CI checks openai External API: yes",
+                      file_contains(".github/workflows/ci.yml",
+                                    r"External API: yes"),
+                      "CI providers listing must show openai has External API: yes")
+    all_pass &= check("OpenAI test files exist",
+                      file_exists("tests/test_openai_transport.py")
+                      and file_exists("tests/test_openai_provider.py")
+                      and file_exists("tests/test_openai_cli.py")
+                      and file_exists("tests/test_openai_security.py"),
+                      "All 4 OpenAI test files must exist")
     print()
 
     # --- CI ---

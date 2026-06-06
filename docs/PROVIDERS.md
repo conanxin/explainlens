@@ -93,33 +93,66 @@ Providers have three lifecycle states:
 | Status | Meaning | Example |
 |--------|---------|---------|
 | `available` | Fully functional, can be used | `rule-based`, `mock-llm` |
-| `disabled` | Code exists but is intentionally disabled | `openai` |
-| `experimental` | Partially implemented, may change | `local-fixture`, `local-http` |
+| `disabled` | Code exists but is intentionally disabled | (none currently) |
+| `experimental` | Partially implemented, may change | `openai`, `local-fixture`, `local-http` |
 
-### Why is OpenAI disabled?
+### OpenAI Provider (experimental)
 
-The `openai` provider is a **draft adapter** — the code skeleton exists
-in `src/explainlens/providers/openai_draft.py`, but it is intentionally
-disabled and will NOT run any analysis.
+**Status:** experimental — requires explicit opt-in.
 
-**Why disabled?**
-- Phase 3.1 focuses on contract hardening and safety boundaries
-- Real external API providers will be enabled in Phase 3.x
-- The draft exists as documentation and a contract placeholder
+The `openai` provider calls the OpenAI Responses API. It is implemented in `src/explainlens/providers/openai_draft.py` with the transport layer in `src/explainlens/providers/openai_transport.py`.
 
-**What happens if I try `--provider openai`?**
+**Characteristics:**
+- `uses_external_api`: `true`
+- `requires_api_key`: `true`
+- `version`: `openai-v0.1`
+- Calls `api.openai.com` via direct HTTP (no `openai` SDK dependency)
+- Requires `--allow-external-api` + `OPENAI_API_KEY` env var
 
+**Fail-closed by default:**
+
+The provider refuses any API call without explicit opt-in:
+
+```bash
+# Fails: no --allow-external-api
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/openai_test \
+  --provider openai
+# Provider error: openai is fail-closed by default.
+# To enable it, set OPENAI_API_KEY and pass --allow-external-api.
+# No request was sent.
+
+# Fails: --allow-external-api but no API key
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/openai_test \
+  --provider openai \
+  --allow-external-api
+# Provider error: OPENAI_API_KEY is not set.
+# No request was sent.
 ```
-Provider error: Provider 'openai' is currently disabled. Real external API providers are not enabled in this release.
 
-Available providers:
-  - rule-based  (default, local heuristic)
-  - mock-llm    (mock LLM, no API calls)
+**Opt-in usage:**
 
-The OpenAI provider will be enabled in a future Phase 3.x release. For more details, see docs/PROVIDERS.md.
+```bash
+# Set API key (never commit to version control)
+export OPENAI_API_KEY="sk-..."
+
+# Run with explicit opt-in
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/openai_run \
+  --provider openai \
+  --allow-external-api \
+  --openai-timeout 60
 ```
 
-No output files are created. The command fails closed.
+**Security guarantees:**
+- No hardcoded API keys (uses `OPENAI_API_KEY` env var only)
+- No `import openai` (direct HTTP, no SDK dependency)
+- Provider manifest discloses `uses_external_api: true`
+- All 81 tests use mock fixtures — zero real API calls in CI
 
 ---
 
@@ -578,7 +611,6 @@ The following providers are planned for future releases:
 
 | Provider | Description | Phase |
 |----------|-------------|-------|
-| `openai` | OpenAI GPT API (GPT-4, GPT-4o) | Phase 3.x (draft disabled) |
 | `local` | Local models via Ollama, llama.cpp | Phase 3.x (partially implemented as `local-fixture`) |
 | `custom` | User-defined external API endpoint | Phase 3.x |
 | `anthropic` | Anthropic Claude API | Future |
@@ -600,8 +632,14 @@ ExplainLens enforces the following safety guarantees for all providers:
 2. **No document upload.** Input files are processed locally and never sent
    to external servers.
 
-3. **No API key required.** The current version does not read any API keys
-   from environment variables.
+3. **No API key required (default).** The default `rule-based` provider, the
+   `mock-llm` provider, and the `local-fixture` provider never read API keys.
+   The `openai` and `local-http` providers may read API keys only when
+   explicitly opted in via `--allow-external-api` or `--allow-local-http`.
+
+4. **Fail-closed for external API providers.** The `openai` provider refuses
+   any API call without `--allow-external-api` + `OPENAI_API_KEY`. No output
+   files are created on failure.
 
 4. **Source traceability preserved.** Every card's `source_chunk_ids` links
    back to the original document text.
@@ -665,10 +703,8 @@ Available providers:
     External API: no
     Requires API key: no
 
-Disabled providers:
-
   - openai
-    Status:       disabled
+    Status:       experimental
     External API: yes
     Requires API key: yes
 ```

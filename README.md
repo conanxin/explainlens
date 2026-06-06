@@ -9,7 +9,7 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前版本**: v0.1.0-alpha (Phase 3.2B — Local HTTP provider draft)。
+> **当前版本**: v0.1.0-alpha (Phase 3.3 — OpenAI provider opt-in draft)。
 > **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
 > 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
@@ -146,9 +146,9 @@ Provider status:
 | `mock-llm` | Available | no | no |
 | `local-fixture` | experimental | no | no |
 | `local-http` | experimental | local loopback only | no |
-| `openai` | disabled | yes | yes |
+| `openai` | experimental | yes | yes |
 
-No external AI APIs are called in v0.1.x. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for details.
+All built-in providers run offline by default. The `openai` provider requires explicit opt-in. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for details.
 
 ## Local providers
 

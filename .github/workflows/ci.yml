@@ -112,12 +112,25 @@ jobs:
         run: |
           python -m explainlens.cli providers
 
-      - name: Check disabled openai provider (should fail)
+      - name: Check openai fail-closed (no --allow-external-api, should fail)
         run: |
           ! python -m explainlens.cli analyze \
             --input examples/sample_article.txt \
-            --output outputs/ci_openai_disabled_test \
+            --output outputs/ci_openai_fail_closed_test \
             --provider openai
+
+      - name: Check openai fail-closed (--allow-external-api but no key, should fail)
+        run: |
+          ! python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_openai_no_key_test \
+            --provider openai \
+            --allow-external-api
+
+      - name: Check providers listing shows openai as experimental
+        run: |
+          python -m explainlens.cli providers | grep -q "openai"
+          python -m explainlens.cli providers | grep -q "External API: yes"
 
       - name: Smoke test local-http fixture input
         run: |

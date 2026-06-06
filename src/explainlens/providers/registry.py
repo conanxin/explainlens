@@ -34,14 +34,12 @@ AVAILABLE_PROVIDERS: dict[str, type[ExplainProvider]] = {
 
 DISABLED_PROVIDERS: dict[str, type[ExplainProvider]] = {}
 
-# Lazy import to avoid loading openai_draft at module level unless needed.
-# The openai module is imported eagerly here for capability listing,
-# but the class is never instantiated unless explicitly requested.
+# Lazy import: OpenAI provider is experimental (not disabled)
 try:
-    from explainlens.providers.openai_draft import OpenAIDraftProvider
-    DISABLED_PROVIDERS["openai"] = OpenAIDraftProvider
+    from explainlens.providers.openai_draft import OpenAIProvider
+    AVAILABLE_PROVIDERS["openai"] = OpenAIProvider
 except ImportError:
-    pass  # Graceful if the draft file is somehow missing
+    pass  # Graceful if the file is somehow missing
 
 # All known providers (available + disabled)
 _ALL_PROVIDERS = {**AVAILABLE_PROVIDERS, **DISABLED_PROVIDERS}

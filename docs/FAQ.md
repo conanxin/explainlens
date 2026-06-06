@@ -71,11 +71,9 @@ Source chunks 保留：
 
 ## 当前版本会调用外部 AI API 吗？
 
-**不会。** 当前版本使用启发式规则（关键词匹配、固定模板）完成所有分析。
+**默认不会。** 当前版本的默认 provider（`rule-based`）和 mock provider（`mock-llm`）都不会发起任何网络请求。
 
-ExplainLens 的 default provider (`rule-based`) 和 mock provider (`mock-llm`) 都不会发起任何网络请求。
-
-Phase 3 已实现 provider 适配器接口（`--provider mock-llm`），但仍不调用真实 AI API。真实 LLM adapter（OpenAI、Ollama 等）将在后续版本接入。
+Phase 3.3 已实现 `openai` provider（experimental），但**默认 fail-closed**——必须显式传递 `--allow-external-api` 并设置 `OPENAI_API_KEY` 环境变量才会实际调用 OpenAI API。
 
 ---
 
@@ -102,25 +100,71 @@ python -m explainlens.cli analyze --input examples/sample_article.txt --output o
 
 ## 现在可以用 OpenAI 了吗？
 
-**不可以。** 当前版本（v0.1.x）暂不提供 OpenAI provider。
+**可以，但需要显式 opt-in。** Phase 3.3 已实现 `openai` provider（experimental 状态）。
 
-Phase 3 已实现 provider 适配器接口的框架（base class + registry），但 `openai` provider 尚未实现。真实的 OpenAI / Anthropic / Ollama / 本地模型 adapter 将在后续 Phase 3.x 中接入。
+使用前提：
+1. 设置环境变量 `OPENAI_API_KEY="sk-..."`
+2. 传递 `--allow-external-api` 标志
+3. 默认行为：**fail closed**（无此标志则拒绝调用，不创建输出文件）
 
-届时，source citations 和 source_chunk_ids 仍然会保持完整——这是 provider contract 的硬性要求。
+```bash
+# 设置 API key（不要提交到版本控制）
+export OPENAI_API_KEY="sk-..."
+
+# 运行 openai provider
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/openai_run \
+  --provider openai \
+  --allow-external-api
+```
+
+**重要**：
+- 所有 81 个 OpenAI 测试都使用 mock fixture，CI 不调用真实 API
+- Provider manifest 会披露 `uses_external_api: true`
+- 无 `--allow-external-api` 时 fail-closed：不会创建任何输出文件
 
 ---
 
-## 为什么 OpenAI provider 被禁用了？
+## 为什么需要 fail-closed？
 
-OpenAI provider 在 Phase 3.1 中是 **disabled（禁用）** 状态。
+`openai` provider 调用外部 API（api.openai.com），涉及网络请求和数据传输。fail-closed 设计确保：
 
-原因：
-- Phase 3 的重点是 provider 契约硬化和安全边界，而非接入真实外部 API
-- `openai` provider 的代码骨架已存在于 `src/explainlens/providers/openai_draft.py`
-- 但它是 **draft 状态**，调用任何方法都会抛出清晰的 `RuntimeError`
-- 当您尝试 `--provider openai` 时，会立即失败并提示可用的 providers
+1. **安全默认**：不显式 opt-in 就不会调用外部 API
+2. **避免意外费用**：不设置 API key 就不会产生账单
+3. **CI 兼容**：CI 环境无需 API key 即可运行 fail-closed 测试
+4. **无残留输出**：fail-closed 时不会创建任何输出文件或目录
 
-后续 Phase 3.x 会实现真实的 OpenAI adapter，并正确设置 `uses_external_api=true`。
+## 什么是 --allow-external-api？
+
+`--allow-external-api` 是 Phase 3.3 引入的 CLI 参数，用于**显式 opt-in** 外部 API 调用。
+
+**Fail-closed 行为：**
+
+```bash
+# 1. 不传 --allow-external-api（应该失败）
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/test \
+  --provider openai
+# 输出: Provider error: openai is fail-closed by default.
+# No request was sent.
+
+# 2. 传 --allow-external-api 但无 API key（应该失败）
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/test \
+  --provider openai \
+  --allow-external-api
+# 输出: Provider error: OPENAI_API_KEY is not set.
+# No request was sent.
+```
+
+## 为什么 OpenAI provider 曾经被禁用？
+
+Phase 3.1 中 OpenAI provider 是 **disabled（禁用）** 的草案骨架。Phase 3.3 已将其从 `DISABLED_PROVIDERS` 移至 `AVAILABLE_PROVIDERS`，状态变为 `experimental`。
+
+现在它可以实际调用 OpenAI Responses API（需 `--allow-external-api` + `OPENAI_API_KEY`），但仍保持 fail-closed 默认行为。
 
 ---
 
