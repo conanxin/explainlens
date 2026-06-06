@@ -72,33 +72,53 @@ def main() -> int:
         _fail("Could not read version from pyproject.toml")
         all_pass = False
 
+    # Map PEP 440 version to release tag
+    # "0.2.0a0" → "v0.2.0-alpha"
+    # "0.1.0" → "v0.1.0"
+    # "0.3.0b1" → "v0.3.0-beta1"
+    import re as _re
+    if version:
+        # PEP 440 → tag: "0.2.0a0" → "v0.2.0-alpha", "0.3.0b1" → "v0.3.0-beta1"
+        _suggested_tag = _re.sub(r"a0$", "-alpha", version)
+        _suggested_tag = _re.sub(r"a(\d+)$", r"-alpha\1", _suggested_tag)
+        _suggested_tag = _re.sub(r"b0$", "-beta", _suggested_tag)
+        _suggested_tag = _re.sub(r"b(\d+)$", r"-beta\1", _suggested_tag)
+        _suggested_tag = _re.sub(r"rc0$", "-rc", _suggested_tag)
+        _suggested_tag = _re.sub(r"rc(\d+)$", r"-rc\1", _suggested_tag)
+        _suggested_tag = f"v{_suggested_tag}"
+    else:
+        _suggested_tag = "v0.0.0"
+    _suggested_title = f"ExplainLens {_suggested_tag}"
+
     print()
     print("--- File Checks ---")
 
-    # 2. CHANGELOG contains version string
-    changelog = ROOT / "CHANGELOG.md"
-    if changelog.exists() and version and version in changelog.read_text(encoding="utf-8"):
-        _ok(f"CHANGELOG.md contains version {version}")
+    # 2. CHANGELOG contains suggested tag or version string
+    changelog_text = ROOT / "CHANGELOG.md"
+    if changelog_text.exists():
+        text = changelog_text.read_text(encoding="utf-8")
+        tag_in_changelog = _suggested_tag in text or (version and version in text)
+        if tag_in_changelog:
+            _ok(f"CHANGELOG.md contains {_suggested_tag} (or version {version})")
+        else:
+            _fail(
+                f"CHANGELOG.md does not mention {_suggested_tag} or version {version}",
+                "Add a changelog entry for this version before releasing.",
+            )
+            all_pass = False
     else:
-        _fail(
-            f"CHANGELOG.md does not mention version {version}",
-            "Add a changelog entry for this version before releasing.",
-        )
+        _fail("CHANGELOG.md not found")
         all_pass = False
 
-    # 3. Release notes file exists (allow suffix like -alpha, -beta, -rc1)
+    # 3. Release notes file exists (check for exact tag file, e.g. v0.2.0-alpha.md)
     releases_dir = ROOT / "docs" / "releases"
-    tag_prefix = f"v{version}" if version else "v0.0.0"
-    # Find any release notes file starting with the version tag
-    matching_notes = list(releases_dir.glob(f"{tag_prefix}*.md")) if releases_dir.exists() else []
-    if matching_notes:
-        release_notes = matching_notes[0]
-        _ok(f"Release notes exist: docs/releases/{release_notes.name}")
+    release_notes_path = releases_dir / f"{_suggested_tag}.md"
+    if release_notes_path.exists():
+        _ok(f"Release notes exist: docs/releases/{_suggested_tag}.md")
     else:
-        release_notes = releases_dir / f"{tag_prefix}.md"
         _fail(
-            f"Release notes not found: docs/releases/{tag_prefix}*.md",
-            f"Create docs/releases/{tag_prefix}.md (or {tag_prefix}-alpha.md etc.) with release notes.",
+            f"Release notes not found: docs/releases/{_suggested_tag}.md",
+            f"Create docs/releases/{_suggested_tag}.md with release notes.",
         )
         all_pass = False
 
@@ -178,20 +198,19 @@ def main() -> int:
         print("  RESULT: PASS -- Ready to release!")
         print()
         if version:
-            # Use the actual release notes filename (may have -alpha suffix)
-            if matching_notes:
-                notes_file = f"docs/releases/{matching_notes[0].name}"
-                tag_name = matching_notes[0].stem  # e.g. v0.1.0-alpha
-            else:
-                tag_name = f"v{version}"
-                notes_file = f"docs/releases/{tag_name}.md"
+            notes_file = f"docs/releases/{_suggested_tag}.md"
+            print(f"  suggested tag: {_suggested_tag}")
+            print(f"  suggested title: {_suggested_title}")
+            print(f"  release notes path: {notes_file}")
+            print()
             print("  Suggested release commands (do NOT run automatically):")
             print()
-            print(f"    git tag -a {tag_name} -m \"ExplainLens {tag_name}\"")
-            print(f"    git push origin {tag_name}")
-            print(f"    gh release create {tag_name} \\")
-            print(f"      --title \"ExplainLens {tag_name}\" \\")
-            print(f"      --notes-file {notes_file}")
+            print(f"    git tag -a {_suggested_tag} -m \"{_suggested_title}\"")
+            print(f"    git push origin {_suggested_tag}")
+            print(f"    gh release create {_suggested_tag} \\")
+            print(f"      --title \"{_suggested_title}\" \\")
+            print(f"      --notes-file {notes_file} \\")
+            print(f"      --prerelease")
         print()
     else:
         print("  RESULT: BLOCKED -- Fix the failing checks before releasing.")

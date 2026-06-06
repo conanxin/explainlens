@@ -126,9 +126,9 @@ def main() -> int:
     all_pass &= check("pyproject.toml has correct name",
                       file_contains("pyproject.toml", r'name\s*=\s*"explainlens"'),
                       "project name must be 'explainlens'")
-    all_pass &= check("pyproject.toml has version 0.1.0",
-                      file_contains("pyproject.toml", r'version\s*=\s*"0\.1\.0"'),
-                      "version must be 0.1.0")
+    all_pass &= check("pyproject.toml has version 0.2.0a0",
+                      file_contains("pyproject.toml", r'version\s*=\s*"0\.2\.0a0"'),
+                      "version must be 0.2.0a0 for v0.2.0-alpha release")
     all_pass &= check(".gitignore exists", file_exists(".gitignore"))
     all_pass &= check(".gitignore covers .env",
                       file_contains(".gitignore", r"\.env"))
@@ -444,6 +444,49 @@ def main() -> int:
                       and file_exists("tests/test_openai_cli.py")
                       and file_exists("tests/test_openai_security.py"),
                       "All 4 OpenAI test files must exist")
+    print()
+
+    # --- v0.2.0-alpha Release Readiness (Phase 3.4) ---
+    print(">>> v0.2.0-alpha Release Readiness (Phase 3.4)")
+    all_pass &= check("docs/releases/v0.2.0-alpha.md exists",
+                      file_exists("docs/releases/v0.2.0-alpha.md"),
+                      "Release notes must exist for v0.2.0-alpha")
+    all_pass &= check("README mentions v0.2.0-alpha",
+                      file_contains("README.md", r"v0\.2\.0-alpha"),
+                      "README must mention v0.2.0-alpha")
+    all_pass &= check("CHANGELOG contains v0.2.0-alpha",
+                      file_contains("CHANGELOG.md", r"v0\.2\.0-alpha"),
+                      "CHANGELOG must contain [v0.2.0-alpha] section")
+    all_pass &= check("prepare_release.py suggests v0.2.0-alpha",
+                      file_contains("scripts/prepare_release.py", r"v0\.2\.0-alpha"),
+                      "prepare_release.py must map version to v0.2.0-alpha")
+    all_pass &= check("Provider docs mention OpenAI opt-in",
+                      file_contains("docs/PROVIDERS.md", r"openai.*fail-closed"),
+                      "PROVIDERS.md must document OpenAI opt-in process")
+    all_pass &= check("Security docs mention fail-closed external API",
+                      file_contains("docs/SECURITY.md", r"fail-closed.*external|External.*fail-closed"),
+                      "SECURITY.md must cover fail-closed external API rules")
+    all_pass &= check("CI has openai fail-closed checks",
+                      file_contains(".github/workflows/ci.yml", r"allow-external-api"),
+                      "CI must test OpenAI fail-closed behavior")
+    all_pass &= check("CI has local-http fixture checks",
+                      file_contains(".github/workflows/ci.yml", r"ci_local_http_fixture"),
+                      "CI must have local-http fixture smoke test")
+    all_pass &= check("CI has doctor / validate-endpoint checks",
+                      file_contains(".github/workflows/ci.yml", r"explainlens\.cli doctor"),
+                      "CI must test doctor command")
+    all_pass &= check("Release notes mention PDF support",
+                      file_contains("docs/releases/v0.2.0-alpha.md", r"PDF.*input|PDF.*PyMuPDF|PDF.*support"),
+                      "Release notes must describe PDF support")
+    all_pass &= check("Release notes mention provider system",
+                      file_contains("docs/releases/v0.2.0-alpha.md", r"Provider.*system|provider.*architecture"),
+                      "Release notes must describe provider system")
+    all_pass &= check("Release notes mention no OCR",
+                      file_contains("docs/releases/v0.2.0-alpha.md", r"OCR"),
+                      "Release notes must document OCR limitation")
+    all_pass &= check("Release notes mention no real image generation",
+                      file_contains("docs/releases/v0.2.0-alpha.md", r"Real image|image generation|图片生成"),
+                      "Release notes must document no real image generation")
     print()
 
     # --- CI ---

@@ -46,7 +46,7 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-预期输出：81 passed。
+预期输出：All tests passed (418 tests)。
 
 ## 5. 运行示例
 
@@ -114,30 +114,40 @@ start outputs/pdf_demo/cards.html
 
 PDF 输出会额外包含 `source_pages.json`，且每张卡片会显示来源页码和可点击的 citations。打开 `cards.html` 并点击 source citation 即可跳转到页面底部的 Source Appendix。
 
-## 9. 试用 mock-llm provider
+## 9. 试用不同 Provider
+
+ExplainLens 支持多个分析后端：
 
 ```bash
-# 使用 mock-llm provider 分析文本
+# 查看所有可用的 provider
+python -m explainlens.cli providers
+
+# 使用 mock-llm provider（模拟 LLM 输出，不调用 API）
 python -m explainlens.cli analyze \
   --input examples/sample_article.txt \
   --output outputs/mock_run \
   --provider mock-llm
 
-# 预览结果
-start outputs/mock_run/cards.html
+# 使用 local-fixture provider（离线协议测试）
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/local_fixture_demo \
+  --provider local-fixture
+
+# 使用 local-http provider fixture 模式（离线）
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/local_http_fixture \
+  --provider local-http --local-http-protocol fixture
+
+# 运行离线诊断
+python -m explainlens.cli doctor
+
+# 验证 loopback 端点
+python -m explainlens.cli validate-endpoint http://localhost:11434/api/chat
 ```
 
-mock-llm provider 使用更自然的叙事语言生成教学计划和概念分析，但完全不调用外部 API。它用于测试 provider 接口的设计，并为未来接入真实 LLM 提供测试框架。
-
-打开 `run_summary.json` 可以看到 provider 元数据：
-
-```json
-{
-  "provider": "mock-llm",
-  "provider_version": "mock-llm-v0.1",
-  "uses_external_api": false
-}
-```
+mock-llm provider 使用更自然的叙事语言生成教学计划和概念分析，但完全不调用外部 API。local-fixture 和 local-http (fixture 模式) 均为完全离线运行。
 
 ---
 

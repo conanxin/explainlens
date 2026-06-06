@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- (next features will be added here)
+
+---
+
+## [v0.2.0-alpha] - 2026-06-06
+
+### Added
+
 - **Phase 3.3 — OpenAI provider opt-in draft (experimental).**
   - `openai` provider: experimental opt-in provider that calls OpenAI Responses API via standard-library `urllib`.
   - FAIL-CLOSED by default: requires `--allow-external-api` CLI flag AND `OPENAI_API_KEY` env var.

@@ -152,21 +152,36 @@ with its full excerpt and the cards that reference it.
 | Limitation | Detail |
 |------------|--------|
 | PDF support | Searchable PDFs only (no OCR) |
-| No LLM calls | Concepts are extracted using keyword heuristics, not a language model |
+| No LLM calls (default) | Default provider uses keyword heuristics, not a language model |
+| OpenAI experimental | OpenAI provider exists but requires explicit opt-in |
 | No real images | Image areas show SVG geometric placeholders |
 | SVG is illustrative | The SVG diagrams represent conceptual metaphors, not AI-generated art |
 | Fixed 8-card structure | Always produces exactly 8 cards per run |
 
 ---
 
+## Provider-Based Demos
+
+ExplainLens supports multiple analysis backends via the `--provider` flag:
+
+```bash
+# List all providers
+python -m explainlens.cli providers
+
+# Mock LLM (no API calls)
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/demo_mock --provider mock-llm
+
+# Local fixture (offline protocol test)
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/demo_local_fixture --provider local-fixture
+
+# Local HTTP fixture mode (offline)
+python -m explainlens.cli analyze --input examples/sample_article.txt --output outputs/demo_local_http --provider local-http --local-http-protocol fixture
+
+# Offline diagnostics
+python -m explainlens.cli doctor
+```
+
 ## How to Extend the Demo Later
-
-**Add PDF support (Phase 2)**:
-Install PyMuPDF and add a `parse_pdf()` function to `src/explainlens/parser.py`.
-
-**Plug in an LLM (Phase 3)**:
-Replace `analyzer.py` and `planner.py` with API calls to OpenAI, Anthropic, or a local
-model via Ollama. The schemas in `schemas.py` are already designed to be LLM-output compatible.
 
 **Generate real images (Phase 4)**:
 Add an `image_generator.py` adapter that sends each `image_prompt` to
@@ -176,6 +191,10 @@ the generated image URL or base64 data.
 **Launch a Web UI (Phase 5)**:
 Wrap the CLI pipeline in a FastAPI endpoint and build a React or plain-HTML frontend
 that displays the cards interactively.
+
+**Plug in more AI models**:
+Use the `local-http` provider with Ollama, LM Studio, or llama.cpp.
+Or use the `openai` provider with your own API key via `--allow-external-api`.
 
 ---
 

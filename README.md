@@ -9,10 +9,11 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前版本**: v0.1.0-alpha (Phase 3.3 — OpenAI provider opt-in draft)。
-> **重要说明**：当前版本**不调用外部 AI API**，**不生成真实图片**。
-> 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts（可后续接入 Stable Diffusion / DALL-E 等图像模型）。
-> 详见 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
+> **当前开发目标**: v0.2.0-alpha (Local-first provider MVP)。
+> **重要说明**：默认**不调用外部 AI API**，**不生成真实图片**。
+> 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts。
+> OpenAI provider 为 experimental 状态，需显式 opt-in（`--allow-external-api` + `OPENAI_API_KEY`）。
+> 详见 [v0.2.0-alpha Release Notes](docs/releases/v0.2.0-alpha.md) 和 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
 
 ---
 
@@ -216,14 +217,17 @@ explainlens/
 │   └── providers/      # Provider 适配器接口
 │       ├── base.py     # 抽象接口
 │       ├── contract.py # 能力声明 + 输出校验
+│       ├── registry.py # Provider 注册中心
 │       ├── rule_based.py # 规则引擎 provider
 │       ├── mock_llm.py # Mock LLM provider
 │       ├── local_fixture.py # 离线本地 provider 协议测试
-│       ├── openai_draft.py # OpenAI disabled draft
+│       ├── local_http.py # 本地 HTTP provider (loopback-only)
+│       ├── local_http_transport.py # 本地 HTTP 传输层
+│       ├── openai_draft.py # OpenAI experimental provider
+│       ├── openai_transport.py # OpenAI HTTP transport
 │       ├── prompt_contract.py # 结构化 prompt 约定
 │       ├── response_contract.py # 结构化 response 约定
-│       ├── fixture_transport.py # 离线传输层模拟
-│       └── registry.py # Provider 注册中心
+│       └── fixture_transport.py # 离线传输层模拟
 ├── tests/              # 测试
 ├── examples/           # 示例输入
 ├── docs/               # 文档
@@ -236,25 +240,31 @@ explainlens/
 
 详见 [ROADMAP.md](docs/ROADMAP.md)：
 
-- **Phase 1** ✅ 本地文本 → 解释卡（当前版本）
+- **Phase 1** ✅ 本地文本 → 解释卡（v0.1.0-alpha）
 - **Phase 2** ✅ PDF 解析（searchable PDF text extraction）
-- **Phase 3** 🔄 Provider 适配器接口 + 契约硬化（rule-based + mock-llm + local-fixture + disabled openai）
-- **Phase 3.1** ✅ Provider contract hardening + disabled OpenAI draft
-- **Phase 3.2A** 🔄 Offline local fixture provider protocol
+- **Phase 3** ✅ Provider 适配器接口（rule-based + mock-llm + local-fixture + local-http + openai）
+- **Phase 3.1** ✅ Provider contract hardening
+- **Phase 3.2A** ✅ Offline local fixture provider protocol
+- **Phase 3.2B** ✅ Local HTTP provider (loopback-only, fail-closed)
+- **Phase 3.2C** ✅ Local provider UX polish (doctor, validate-endpoint, config templates)
+- **Phase 3.3** ✅ OpenAI provider opt-in (experimental, fail-closed)
+- **Phase 3.4** 🔄 v0.2.0-alpha release hardening
 - **Phase 4** 真实图片生成适配器
 - **Phase 5** Web UI
 - **Phase 6** 长图/PPT/视频导出
 
 ## 当前限制
 
-Phase 2 版本有以下已知限制：
+当前版本有以下已知限制：
 
 - **不支持扫描版 PDF** — 无 OCR，仅支持搜索型 PDF
 - **不解析表格和公式** — PDF 中的表格、图形、数学符号不深度解析
-- **不调用外部 AI API** — 不使用 OpenAI / Anthropic / Ollama 等服务
+- **OpenAI provider 为 experimental** — 需显式 `--allow-external-api` opt-in
+- **local-http provider 为 experimental** — 仅允许 loopback 端点
+- **默认不调用外部 API** — rule-based / mock-llm / local-fixture 完全离线
 - **不生成真实图片** — 输出 SVG 占位图和 image prompts，不接入 Stable Diffusion / DALL-E
 - **无 Web UI** — 仅命令行工具
-- **概念提取为启发式规则** — 不使用 LLM，质量取决于输入文本结构
+- **概念提取为启发式规则** — 不使用 LLM（默认 provider），质量取决于输入文本结构
 
 ## 常见问题
 
@@ -263,6 +273,7 @@ Phase 2 版本有以下已知限制：
 ## 版本历史
 
 - [CHANGELOG.md](CHANGELOG.md)
+- [v0.2.0-alpha Release Notes](docs/releases/v0.2.0-alpha.md)
 - [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)
 
 ## 贡献

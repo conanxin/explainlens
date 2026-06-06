@@ -84,23 +84,6 @@
 - [x] CLI arguments: `--local-http-endpoint`, `--local-http-model`, `--local-http-protocol`, `--allow-local-http`, `--local-http-timeout`
 - [x] 5 new test files: `test_local_http_transport.py`, `test_local_http_provider.py`, `test_local_http_cli.py`
 
-## Phase 3.2B: Local HTTP Provider Draft ✅
-
-**Status: Complete**
-
-- [x] `local-http` provider (experimental, loopback-only)
-- [x] Local HTTP transport with loopback endpoint validation
-- [x] Support for `fixture`, `ollama-chat`, `openai-compatible-chat` protocols
-- [x] Fail-closed network policy (requires `--allow-local-http`)
-- [x] `is_local_endpoint()` — strict loopback-only validation
-- [x] `build_local_http_payload()` — protocol-specific payload builders
-- [x] `call_local_http_provider()` — HTTP client with safety checks
-- [x] `extract_structured_response_from_chat_json()` — response parsing
-- [x] Network disclosure block in `provider_manifest.json`
-- [x] Fake local server tests in `test_local_http_transport.py`
-- [x] CLI arguments: `--local-http-endpoint`, `--local-http-model`, `--local-http-protocol`, `--allow-local-http`, `--local-http-timeout`
-- [x] 5 new test files: `test_local_http_transport.py`, `test_local_http_provider.py`, `test_local_http_cli.py`
-
 ## Phase 3.2C: Local Provider UX Polish ✅
 
 **Status: Complete**
@@ -143,6 +126,20 @@
 - [x] CI updated — fail-closed tests + providers listing check
 - [x] Release audit updated — 11 new Phase 3.3 checks
 - [x] Documentation updated — PROVIDERS.md, SECURITY.md, FAQ.md, ROADMAP.md
+
+## Phase 3.4: v0.2.0-alpha Release Hardening 🔄
+
+**Status: In Progress**
+
+- [x] pyproject.toml version → `0.2.0a0` (PEP 440)
+- [x] Release notes: `docs/releases/v0.2.0-alpha.md`
+- [x] `prepare_release.py` — updated for v0.2.0-alpha tag mapping
+- [x] `release_audit.py` — 12 new Phase 3.4 checks
+- [x] CHANGELOG.md — archived entries under `[v0.2.0-alpha]`
+- [x] README.md — updated version, roadmap, architecture, limitations
+- [x] Document consistency pass — QUICKSTART.md, DEMO.md, ROADMAP.md, OPEN_SOURCE_RELEASE_CHECKLIST.md
+- [x] CI verification — all providers smoke tests pass
+- [x] Full local validation (pytest + smoke + audit)
 
 ### Remaining for Phase 3.x
 
