@@ -84,6 +84,45 @@
 - [x] CLI arguments: `--local-http-endpoint`, `--local-http-model`, `--local-http-protocol`, `--allow-local-http`, `--local-http-timeout`
 - [x] 5 new test files: `test_local_http_transport.py`, `test_local_http_provider.py`, `test_local_http_cli.py`
 
+## Phase 3.2B: Local HTTP Provider Draft ✅
+
+**Status: Complete**
+
+- [x] `local-http` provider (experimental, loopback-only)
+- [x] Local HTTP transport with loopback endpoint validation
+- [x] Support for `fixture`, `ollama-chat`, `openai-compatible-chat` protocols
+- [x] Fail-closed network policy (requires `--allow-local-http`)
+- [x] `is_local_endpoint()` — strict loopback-only validation
+- [x] `build_local_http_payload()` — protocol-specific payload builders
+- [x] `call_local_http_provider()` — HTTP client with safety checks
+- [x] `extract_structured_response_from_chat_json()` — response parsing
+- [x] Network disclosure block in `provider_manifest.json`
+- [x] Fake local server tests in `test_local_http_transport.py`
+- [x] CLI arguments: `--local-http-endpoint`, `--local-http-model`, `--local-http-protocol`, `--allow-local-http`, `--local-http-timeout`
+- [x] 5 new test files: `test_local_http_transport.py`, `test_local_http_provider.py`, `test_local_http_cli.py`
+
+## Phase 3.2C: Local Provider UX Polish ✅
+
+**Status: Complete**
+
+- [x] `doctor` CLI command (offline diagnostics, no network calls)
+- [x] `validate-endpoint` CLI command (static loopback validation, no network calls)
+- [x] Enhanced `local-http` error messages (fail-closed UX improvement)
+- [x] Configuration templates in `examples/configs/`
+  - `local-http-ollama.example.json`
+  - `local-http-lmstudio.example.json`
+  - `local-http-llamacpp.example.json`
+- [x] `docs/LOCAL_PROVIDERS.md` — comprehensive local provider guide
+- [x] Updated `README.md` — added Local providers section
+- [x] Updated `docs/PROVIDERS.md` — link to LOCAL_PROVIDERS.md
+- [x] Updated `docs/SECURITY.md` — doctor/validate-endpoint security notes
+- [x] Updated `docs/FAQ.md` — 4 new FAQs
+- [x] Updated `docs/ROADMAP.md` — Phase 3.2C marked complete
+- [x] Updated `CHANGELOG.md` — Added and Changed entries
+- [x] New test files: `test_doctor_cli.py`, `test_endpoint_validation_cli.py`, `test_local_provider_docs.py`
+- [x] Updated `scripts/release_audit.py` — 10 new Phase 3.2C checks
+- [x] Updated `.github/workflows/ci.yml` — doctor + validate-endpoint checks
+
 ## Phase 3.3: OpenAI Opt-in Provider
 
 **Status: Remaining**

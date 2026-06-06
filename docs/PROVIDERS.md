@@ -726,6 +726,7 @@ The `get_provider()` function will raise `RuntimeError` with a clear message.
 
 ## See also
 
+- [Local Providers Guide](LOCAL_PROVIDERS.md) — Local provider diagnostics, endpoint validation, Ollama/LM Studio/llama.cpp examples
 - [FAQ](FAQ.md) — Common questions about providers and AI integration
 - [SECURITY](SECURITY.md) — Security policy and provider safety
 - [ROADMAP](ROADMAP.md) — Planned provider implementations

@@ -150,6 +150,28 @@ Provider status:
 
 No external AI APIs are called in v0.1.x. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for details.
 
+## Local providers
+
+ExplainLens includes local provider diagnostics and endpoint validation:
+
+```bash
+# Run offline diagnostics (no network calls)
+python -m explainlens.cli doctor
+
+# Validate an endpoint (static check, no network)
+python -m explainlens.cli validate-endpoint http://localhost:11434/api/chat
+```
+
+Configuration templates:
+
+```bash
+examples/configs/local-http-ollama.example.json
+examples/configs/local-http-lmstudio.example.json
+examples/configs/local-http-llamacpp.example.json
+```
+
+See [docs/LOCAL_PROVIDERS.md](docs/LOCAL_PROVIDERS.md) for the full guide.
+
 ## 输出文件
 
 运行后，输出目录包含：

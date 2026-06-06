@@ -136,6 +136,70 @@ When debugging or logging provider prompts:
 
 ---
 
+## Phase 3.2C Security Updates
+
+### `doctor` command does not call network
+
+The `doctor` command is completely offline:
+- No network requests
+- No DNS resolution
+- No subprocess spawning
+- No file modifications
+- Exit code 0 on success
+
+```bash
+python -m explainlens.cli doctor
+```
+
+### `validate-endpoint` does not call network
+
+The `validate-endpoint` command performs **static validation only**:
+- No HTTP requests
+- No DNS resolution
+- No network traffic of any kind
+- Parses URL structure and validates against loopback-only policy
+
+```bash
+python -m explainlens.cli validate-endpoint http://localhost:11434/api/chat
+# Static check only — no network call
+
+python -m explainlens.cli validate-endpoint https://api.openai.com/v1/chat/completions
+# Static check only — rejects immediately, no network call
+```
+
+### Local provider configs are examples only
+
+The files in `examples/configs/` are **reference templates**:
+- They are NOT automatically loaded by ExplainLens
+- They serve as documentation for users to understand the expected JSON structure
+- Users must manually configure their own setup
+- No secrets are included in these example files
+
+### No Authorization headers
+
+The `local-http` provider **never** sends `Authorization` headers:
+- No API keys are read from environment variables
+- No Bearer tokens are attached to requests
+- No authentication credentials are sent
+- This is by design — local model servers (Ollama, LM Studio, llama.cpp) typically don't require auth
+
+**Verification:**
+```bash
+# Check provider manifest for safety disclosures
+cat outputs/ci_local_http_fixture/provider_manifest.json | grep -A10 '"safety"'
+```
+
+Output should include:
+```json
+"safety": {
+  "uploads_documents": false,
+  "reads_api_key": false,
+  "writes_secrets": false
+}
+```
+
+---
+
 ## Dependency Security
 
 - Keep dependencies updated

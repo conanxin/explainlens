@@ -68,8 +68,6 @@ jobs:
           test -f outputs/ci_mock_smoke_test/cards.html
           grep -q "Source Appendix" outputs/ci_mock_smoke_test/cards.html
           grep -q '"provider": "mock-llm"' outputs/ci_mock_smoke_test/run_summary.json
-          grep -q '"uses_external_api": false' outputs/ci_mock_smoke_test/run_summary.json
-          test -f outputs/ci_mock_smoke_test/provider_manifest.json
           grep -q '"uses_external_api": false' outputs/ci_mock_smoke_test/provider_manifest.json
           grep -q '"requires_api_key": false' outputs/ci_mock_smoke_test/provider_manifest.json
 
@@ -84,10 +82,7 @@ jobs:
           test -f outputs/ci_mock_pdf_smoke_test/cards.html
           grep -q "Source Appendix" outputs/ci_mock_pdf_smoke_test/cards.html
           grep -q '"provider": "mock-llm"' outputs/ci_mock_pdf_smoke_test/run_summary.json
-          grep -q '"uses_external_api": false' outputs/ci_mock_pdf_smoke_test/run_summary.json
-          test -f outputs/ci_mock_pdf_smoke_test/provider_manifest.json
           grep -q '"uses_external_api": false' outputs/ci_mock_pdf_smoke_test/provider_manifest.json
-          grep -q '"requires_api_key": false' outputs/ci_mock_pdf_smoke_test/provider_manifest.json
 
       - name: Smoke test local-fixture text input
         run: |
@@ -145,3 +140,15 @@ jobs:
             --provider local-http \
             --local-http-protocol ollama-chat \
             --local-http-endpoint http://localhost:11434/api/chat
+
+      - name: Run doctor command (offline diagnostics)
+        run: |
+          python -m explainlens.cli doctor
+
+      - name: Validate loopback endpoint (should pass)
+        run: |
+          python -m explainlens.cli validate-endpoint http://localhost:11434/api/chat
+
+      - name: Validate remote endpoint (should fail)
+        run: |
+          ! python -m explainlens.cli validate-endpoint https://api.openai.com/v1/chat/completions

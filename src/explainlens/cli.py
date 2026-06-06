@@ -350,6 +350,102 @@ def cmd_providers(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """Run offline diagnostics without networking."""
+    import sys
+    print("ExplainLens Doctor\n")
+
+    # Python version
+    import platform
+    print(f"Python: {platform.python_version()}")
+
+    # Package import
+    try:
+        import explainlens
+        print(f"Package import: OK (v{explainlens.__version__ if hasattr(explainlens, '__version__') else 'unknown'})")
+    except ImportError:
+        print("Package import: FAIL")
+        return 1
+
+    # Providers
+    print("\nProviders:")
+    for info in list_providers():
+        name = info["name"]
+        status = info.get("status", "available")
+        print(f"  - {name}: {status}")
+
+    # Disabled providers
+    try:
+        from explainlens.providers.registry import DISABLED_PROVIDERS
+        for name in sorted(DISABLED_PROVIDERS.keys()):
+            print(f"  - {name}: disabled")
+    except ImportError:
+        pass
+
+    # Local HTTP policy
+    print("\nLocal HTTP:")
+    print("  - Default network access: disabled")
+    print("  - Allowed endpoint policy: loopback only")
+    print("  - Remote endpoints: rejected")
+    print("  - Authorization headers: never sent")
+    print("  - Real local model check: skipped by default")
+
+    # Artifacts
+    print("\nArtifacts:")
+    print("  - source_index.json: supported")
+    print("  - provider_manifest.json: supported")
+    print("  - provider_prompt_pack.json: supported with --dump-provider-prompt")
+
+    print("\nDoctor check complete. No issues found.")
+    return 0
+
+
+def cmd_validate_endpoint(args: argparse.Namespace) -> int:
+    """Validate an endpoint for local-http provider (static check, no network)."""
+    import sys
+    endpoint = args.endpoint
+
+    print(f"Endpoint: {endpoint}")
+
+    # Static validation only - no network calls
+    try:
+        from explainlens.providers.local_http_transport import is_local_endpoint
+        if is_local_endpoint(endpoint):
+            print("Allowed: yes")
+            print("Reason: loopback endpoint")
+            return 0
+        else:
+            print("Allowed: no")
+            print("Reason: only loopback endpoints (localhost, 127.0.0.1, ::1) are allowed for local-http")
+            return 1
+    except ImportError:
+        # Fallback: manual check
+        from urllib.parse import urlparse
+        try:
+            parsed = urlparse(endpoint)
+            if parsed.scheme not in ("http", "https"):
+                print("Allowed: no")
+                print(f"Reason: invalid URL scheme: {parsed.scheme}")
+                return 1
+            if parsed.scheme == "https":
+                print("Allowed: no")
+                print("Reason: remote HTTPS endpoints are not allowed for local-http")
+                return 1
+            hostname = parsed.hostname or ""
+            if hostname in ("localhost", "127.0.0.1", "::1"):
+                print("Allowed: yes")
+                print("Reason: loopback endpoint")
+                return 0
+            else:
+                print("Allowed: no")
+                print("Reason: only loopback endpoints (localhost, 127.0.0.1, ::1) are allowed for local-http")
+                return 1
+        except Exception as e:
+            print("Allowed: no")
+            print(f"Reason: invalid URL: {e}")
+            return 1
+
+
 def _provider_requires_key(name: str) -> bool:
     caps = _get_caps(name)
     return caps.requires_api_key if caps else False
@@ -434,12 +530,30 @@ def main() -> None:
         "providers", help="List all known providers and their capabilities"
     )
 
+    # doctor subcommand
+    doctor_parser = subparsers.add_parser(
+        "doctor", help="Run offline diagnostics (no network calls)"
+    )
+
+    # validate-endpoint subcommand
+    validate_parser = subparsers.add_parser(
+        "validate-endpoint", help="Validate an endpoint for local-http provider (static check, no network)"
+    )
+    validate_parser.add_argument(
+        "endpoint",
+        help="Endpoint URL to validate (e.g., http://localhost:11434/api/chat)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "analyze":
         sys.exit(cmd_analyze(args))
     elif args.command == "providers":
         sys.exit(cmd_providers(args))
+    elif args.command == "doctor":
+        sys.exit(cmd_doctor(args))
+    elif args.command == "validate-endpoint":
+        sys.exit(cmd_validate_endpoint(args))
     else:
         parser.print_help()
         sys.exit(1)

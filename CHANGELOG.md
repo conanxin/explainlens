@@ -56,8 +56,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remote HTTP endpoints are rejected with clear error messages.
 - No Authorization headers are sent.
 - No API keys are read or attached.
-- DNS rebinding protection: `localhost` is resolved to verify loopback IP.
+- DNS rebinding protection: `localhost` is resolved to verify it maps to loopback IP.
 - Prompt content is not logged to stdout/stderr.
+
+### Added (Phase 3.2C)
+
+- `doctor` CLI command for offline diagnostics (no network calls).
+- `validate-endpoint` CLI command for loopback endpoint checks (static validation, no network).
+- Local provider configuration templates in `examples/configs/`:
+  - `local-http-ollama.example.json`
+  - `local-http-lmstudio.example.json`
+  - `local-http-llamacpp.example.json`
+- Local provider guide: `docs/LOCAL_PROVIDERS.md`.
+
+### Changed (Phase 3.2C)
+
+- Improved `local-http` fail-closed error messages (clearer user guidance).
+- Updated `README.md` with Local providers section.
+- Updated `docs/PROVIDERS.md` with link to `docs/LOCAL_PROVIDERS.md`.
+- Updated `docs/SECURITY.md` with doctor/validate-endpoint security notes.
+- Updated `docs/FAQ.md` with 4 new local provider FAQs.
+- Updated `docs/ROADMAP.md` — Phase 3.2C marked Complete.
 
 ### Added (Phase 3.1)
 
@@ -89,10 +108,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Source Appendix in HTML and Markdown exports.
 - Source quality warnings in `run_summary.json` (empty pages, short/long chunks).
 - `scripts/create_sample_pdf.py` — generates a 3-page fictional demo PDF.
-- Page references in HTML (Source Excerpt & page N) and Markdown exports.
+- Page references in HTML (`Source Excerpt` & page N) and Markdown exports.
 - `input_type`, `page_count`, and `extraction_method` fields in RunSummary.
 - `source_quality` field in RunSummary.
-- CLI auto-detects input type (.txt, .md, .pdf).
+- CLI auto-detects input type (`.txt` / `.md` / `.pdf`).
 - `format_source_label` and `build_card_source_links` helpers in source_index module.
 - Bibliography/references section detection in PDF chunks.
 - 33 new tests (source_index, citation_rendering, source_quality).
@@ -116,31 +135,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial local MVP release
-- Text parsing for `.txt` and `.md` files
-- Paragraph-based text chunking with character offset tracking
-- Heuristic keyword analysis: core problem, key concepts, claims, methods, evidence, limitations
-- 8-step fixed teaching plan generation
-- 8-panel cartoon storyboard generation with visual metaphors (maze, magnifying glass, detective board, knowledge tree, etc.)
-- English image prompt generation for downstream image models
-- SVG placeholder illustrations (no real image generation)
-- Jinja2-based HTML card renderer
-- Multi-format export: JSON, Markdown, HTML
-- CLI entry point: `python -m explainlens.cli analyze`
-- pytest test suite (44 tests including release gate tests)
-- Open source documentation: README, LICENSE (MIT), CONTRIBUTING, SECURITY, ROADMAP, FAQ, QUICKSTART, DEMO
-- GitHub Actions CI (Python 3.10 / 3.11 / 3.12)
-- Release audit script: `scripts/release_audit.py` (28 checks)
-- Release preparation script: `scripts/prepare_release.py`
-- Demo preview SVG: `docs/assets/demo-preview.svg`
-- Release notes: `docs/releases/v0.1.0-alpha.md`
-- AI research note example: `examples/sample_ai_research_note.txt`
-- Improved HTML renderer: Hero section, run summary, collapsible panels
+- Initial local MVP release.
+- Text parsing for `.txt` and `.md` files.
+- Paragraph-based text chunking with character offset tracking.
+- Heuristic keyword analysis: core problem, key concepts, claims, methods, evidence, limitations.
+- 8-step fixed teaching plan generation.
+- 8-panel cartoon storyboard generation with visual metaphor catalog.
+- English image prompt generation for downstream image models.
+- SVG placeholder illustrations (no real image generation).
+- Jinja2-based HTML card renderer.
+- Multi-format export: JSON, Markdown, HTML.
+- CLI entry point: `python -m explainlens.cli analyze`.
+- pytest test suite (44 tests including release gate tests).
+- Open source documentation: README, LICENSE (MIT), CONTRIBUTING, SECURITY, ROADMAP, FAQ, QUICKSTART, DEMO.
+- GitHub Actions CI (Python 3.10 / 3.11 / 3.12).
+- Release audit script: `scripts/release_audit.py` (28 checks).
+- Release preparation script: `scripts/prepare_release.py`.
+- Demo preview SVG: `docs/assets/demo-preview.svg`.
+- Release notes: `docs/releases/v0.1.0-alpha.md`.
+- AI research note example: `examples/sample_ai_research_note.txt`.
+- Improved HTML renderer: Hero section, run summary, collapsible panels.
 
 ### Not Included (Phase 2+)
 
-- PDF parsing
-- LLM integration (OpenAI / local models)
-- Real image generation (Stable Diffusion / DALL-E)
-- Web UI
-- Long-form export (PPT, video)
+- PDF parsing.
+- LLM integration (OpenAI / local models).
+- Real image generation (Stable Diffusion / DALL-E).
+- Web UI.
+- Long-form export (PPT, video).

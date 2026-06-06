@@ -1,0 +1,8 @@
+{
+  "provider": "local-http",
+  "local_http_protocol": "openai-compatible-chat",
+  "local_http_endpoint": "http://127.0.0.1:1234/v1/chat/completions",
+  "local_http_model": "local-model",
+  "allow_local_http": true,
+  "timeout_seconds": 30
+}

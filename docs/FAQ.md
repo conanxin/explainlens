@@ -479,3 +479,112 @@ Phase 5 会添加可选的 Web UI。
 1. Fork 项目
 2. 给 `examples/` 添加一个有趣的示例文件
 3. 提 PR
+
+---
+
+## 如何检查我的本地 endpoint 是否被允许？
+
+使用 `validate-endpoint` 命令进行**静态检查**（不发送任何网络请求）：
+
+```bash
+python -m explainlens.cli validate-endpoint http://localhost:11434/api/chat
+# 输出：
+# Endpoint: http://localhost:11434/api/chat
+# Allowed: yes
+# Reason: loopback endpoint
+
+python -m explainlens.cli validate-endpoint https://api.openai.com/v1/chat/completions
+# 输出：
+# Endpoint: https://api.openai.com/v1/chat/completions
+# Allowed: no
+# Reason: only loopback endpoints (localhost, 127.0.0.1, ::1) are allowed for local-http
+```
+
+**此命令不会**：
+- 连接到 endpoint
+- 发送任何网络流量
+- 执行 DNS 解析
+- 读取任何 API key
+
+它只做**静态验证**（检查 URL 是否符合 loopback-only 策略）。
+
+---
+
+## `doctor` 命令会调用我的模型吗？
+
+**不会。** `doctor` 命令完全是离线的：
+
+```bash
+python -m explainlens.cli doctor
+```
+
+输出：
+```
+ExplainLens Doctor
+
+Python: 3.x
+Package import: OK
+Providers:
+  - rule-based: available
+  - mock-llm: available
+  - local-fixture: experimental
+  - local-http: experimental
+  - openai: disabled
+
+Local HTTP:
+  - Default network access: disabled
+  - Allowed endpoint policy: loopback only
+  - Remote endpoints: rejected
+  - Authorization headers: never sent
+  - Real local model check: skipped by default
+```
+
+**此命令不会**：
+- 连接到任何网络 endpoint
+- 读取 API key
+- 执行任何外部命令
+- 修改任何文件
+
+它只做**离线诊断**，帮助您确认 ExplainLens 的安装状态。
+
+---
+
+## `validate-endpoint` 会发送请求吗？
+
+**不会。** `validate-endpoint` 只做**静态 URL 验证**：
+
+```bash
+python -m explainlens.cli validate-endpoint http://localhost:11434/api/chat
+```
+
+验证逻辑：
+1. 检查 URL scheme（只允许 `http://`，拒绝 `https://`）
+2. 提取 hostname
+3. 检查 hostname 是否在允许列表中（`localhost`、`127.0.0.1`、`::1`）
+4. 返回结果
+
+**整个过程不发送任何网络请求**，不进行 DNS 解析，不连接任何服务器。
+
+---
+
+## 本地 provider 配置示例在哪里？
+
+配置模板在 `examples/configs/` 目录中：
+
+```bash
+examples/configs/
+├── local-http-ollama.example.json       # Ollama 配置模板
+├── local-http-lmstudio.example.json  # LM Studio 配置模板
+└── local-http-llamacpp.example.json  # llama.cpp 配置模板
+```
+
+**注意**：这些只是**参考模板**，当前版本 CLI 不会自动读取这些 JSON 文件。它们用于：
+- 文档说明
+- 用户手动参考配置
+- 理解 expected JSON 结构
+
+详见 [Local Providers Guide](LOCAL_PROVIDERS.md)。
+
+---
+
+## 当前版本会生成真实图片吗？

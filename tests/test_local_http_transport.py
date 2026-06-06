@@ -187,7 +187,7 @@ class TestCallLocalHttpProvider:
 
     def test_allow_network_false_raises_runtime_error(self):
         pack = self._make_prompt_pack()
-        with pytest.raises(RuntimeError, match="explicit network opt-in"):
+        with pytest.raises(RuntimeError, match="fail-closed"):
             call_local_http_provider(
                 prompt_pack=pack,
                 endpoint="http://localhost:11434/api/chat",

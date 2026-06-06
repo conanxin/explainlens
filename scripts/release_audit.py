@@ -62,6 +62,31 @@ def grep_source(pattern: str) -> list[Path]:
     return hits
 
 
+def _run_cli_check(args: list[str], expected_exit: int = 0) -> bool:
+    """Run a CLI command and return True if exit code matches expected.
+
+    Args:
+        args: CLI arguments (e.g., ["doctor"] or ["validate-endpoint", "http://..."])
+        expected_exit: Expected exit code (default 0)
+
+    Returns:
+        True if the command exits with expected_exit.
+    """
+    import subprocess
+    cli = [sys.executable, "-m", "explainlens.cli"] + args
+    try:
+        result = subprocess.run(
+            cli,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=PROJECT_ROOT,
+        )
+        return result.returncode == expected_exit
+    except Exception:
+        return False
+
+
 def main() -> int:
     print("=" * 60)
     print("  ExplainLens -- Release Audit")
@@ -338,6 +363,36 @@ def main() -> int:
     all_pass &= check(".env.example does not include local HTTP secrets",
                       not file_contains(".env.example", r"LOCAL_HTTP_API_KEY"),
                       ".env.example must not include local HTTP secrets")
+    print()
+
+    # --- Local Provider UX Polish (Phase 3.2C) ---
+    print(">>> Local Provider UX Polish (Phase 3.2C)")
+    all_pass &= check("docs/LOCAL_PROVIDERS.md exists",
+                      file_exists("docs/LOCAL_PROVIDERS.md"))
+    all_pass &= check("README contains validate-endpoint",
+                      file_contains("README.md", r"validate-endpoint"),
+                      "README must mention validate-endpoint command")
+    all_pass &= check("README contains doctor",
+                      file_contains("README.md", r"doctor"),
+                      "README must mention doctor command")
+    all_pass &= check("examples/configs/local-http-ollama.example.json exists",
+                      file_exists("examples/configs/local-http-ollama.example.json"))
+    all_pass &= check("examples/configs/local-http-lmstudio.example.json exists",
+                      file_exists("examples/configs/local-http-lmstudio.example.json"))
+    all_pass &= check("examples/configs/local-http-llamacpp.example.json exists",
+                      file_exists("examples/configs/local-http-llamacpp.example.json"))
+    all_pass &= check("doctor command runs",
+                      _run_cli_check(["doctor"], expected_exit=0),
+                      "doctor command must run without error")
+    all_pass &= check("validate-endpoint localhost returns allowed",
+                      _run_cli_check(["validate-endpoint", "http://localhost:11434/api/chat"], expected_exit=0),
+                      "validate-endpoint must allow localhost")
+    all_pass &= check("validate-endpoint api.openai.com returns rejected",
+                      _run_cli_check(["validate-endpoint", "https://api.openai.com/v1/chat/completions"], expected_exit=1),
+                      "validate-endpoint must reject remote URLs")
+    all_pass &= check("SECURITY contains Authorization headers",
+                      file_contains("docs/SECURITY.md", r"Authorization header"),
+                      "SECURITY.md must mention Authorization headers safety")
     print()
 
     # --- CI ---

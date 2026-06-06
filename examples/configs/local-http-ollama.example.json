@@ -1,0 +1,8 @@
+{
+  "provider": "local-http",
+  "local_http_protocol": "ollama-chat",
+  "local_http_endpoint": "http://localhost:11434/api/chat",
+  "local_http_model": "llama3.2",
+  "allow_local_http": true,
+  "timeout_seconds": 30
+}

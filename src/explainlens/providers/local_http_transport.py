@@ -315,20 +315,29 @@ def call_local_http_provider(
     # 2. Check allow_network
     if not allow_network:
         raise RuntimeError(
-            "Local HTTP provider requires explicit network opt-in. "
-            "Use --allow-local-http flag, or use --local-http-protocol fixture "
-            "for offline testing."
+            "local-http is fail-closed by default.\n"
+            "To call a local model server, add --allow-local-http.\n"
+            "Only loopback endpoints are allowed.\n"
+            "For CI-safe testing, use --local-http-protocol fixture."
         )
 
     # 3. Validate endpoint
     if not endpoint or not isinstance(endpoint, str):
-        raise ValueError("Endpoint must be a non-empty string.")
+        raise ValueError(
+            f"Endpoint must be a non-empty string.\n"
+            f"Allowed endpoints: http://localhost:PORT/PATH\n"
+            f"                 http://127.0.0.1:PORT/PATH\n"
+            f"                 http://[::1]:PORT/PATH"
+        )
 
     safe, reason = is_safe_endpoint(endpoint)
     if not safe:
         raise ValueError(
-            f"Endpoint safety check failed: {reason}. "
-            "Only loopback endpoints (localhost, 127.0.0.1, ::1) are allowed."
+            f"Endpoint rejected: {endpoint}\n"
+            f"Reason: {reason}\n"
+            f"Allowed endpoints:\n"
+            f"  - http://localhost:11434/api/chat\n"
+            f"  - http://127.0.0.1:1234/v1/chat/completions"
         )
 
     # 4. Build payload
