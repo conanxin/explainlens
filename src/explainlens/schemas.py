@@ -124,5 +124,7 @@ class RunSummary(BaseModel):
     image_adapter_version: Optional[str] = Field(default=None, description="Image adapter version string")
     image_count: int = Field(default=0, description="Number of images generated")
     uses_external_image_api: bool = Field(default=False, description="Whether image adapter calls external APIs")
+    image_style: Optional[str] = Field(default=None, description="Image style preset used")
+    image_manifest_path: str = Field(default="image_manifest.json", description="Path to image manifest file")
     warnings: List[str] = Field(default_factory=list, description="Warnings during processing")
     source_quality: dict = Field(default_factory=dict, description="Source quality metadata")

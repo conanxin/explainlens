@@ -161,7 +161,9 @@ class TestMarkdownCitations:
         ]
 
         md = export_cards_markdown(cards, chunks)
-        assert "Source excerpt:" in md
+        # Source excerpt is wrapped in <details><summary> tag
+        assert "<details>" in md
+        assert "Source excerpt" in md
         assert "excerpt text" in md
 
     def test_markdown_used_by_in_appendix(self):
@@ -189,4 +191,4 @@ class TestMarkdownCitations:
 
         md = export_cards_markdown(cards, None)
         assert "## Source Appendix" not in md
-        assert "## 卡片 1" in md
+        assert "## Card 01" in md

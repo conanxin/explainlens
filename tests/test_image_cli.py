@@ -182,7 +182,8 @@ class TestAnalyzeImageCLI:
 
         md = (output_dir / "cards.md").read_text(encoding="utf-8")
         assert "images/card_" in md
-        assert "Image adapter: placeholder" in md
+        assert "**Adapter:**" in md
+        assert "`placeholder`" in md
 
     def test_markdown_skip_images(self):
         """When --skip-images, cards.md should show skip message."""

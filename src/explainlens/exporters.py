@@ -73,7 +73,8 @@ def export_cards_markdown(
     """Export cards as a Markdown document with source appendix.
 
     Each card's source section uses clickable-style citation labels.
-    Document ends with a Source Appendix listing every chunk with its excerpt.
+    Document ends with a Source Appendix listing every chunk with its excerpt
+    and an Image Manifest section.
 
     Args:
         cards: List of ImageCard objects.
@@ -87,59 +88,86 @@ def export_cards_markdown(
     card_links = build_card_source_links(cards, chunks or [])
 
     lines = [
-        "# ExplainLens — 图解解释卡",
+        "# ExplainLens — Visual Explainer Cards",
         "",
-        f"共 {len(cards)} 张卡片",
-        "",
-        "---",
+        f"**{len(cards)} cards** generated from source document.",
         "",
     ]
+
+    if skip_images:
+        lines.append("> **Image generation skipped.** No images were generated.")
+        lines.append("")
+    elif image_adapter:
+        lines.append(f"> **Image adapter:** `{image_adapter}` — all images generated locally.")
+        lines.append("")
+
+    lines.append("---")
+    lines.append("")
 
     for i, card in enumerate(cards, 1):
         links = card_links.get(card.card_id, {})
         source_labels = links.get("labels", [])
+        card_id_num = card.card_id.replace("card_", "")
 
-        lines.append(f"## 卡片 {i}：{card.title}")
-        lines.append("")
-        lines.append(f"**解释**：{card.explanation}")
-        lines.append("")
-        lines.append(f"> **Takeaway**：{card.takeaway}")
+        lines.append(f"## Card {card_id_num} — {card.title}")
         lines.append("")
 
         # Image reference (if image adapter was used)
         if not skip_images and image_adapter:
-            lines.append(f"![{card.card_id}](images/{card.card_id}.svg)")
+            lines.append(f"![{card.title}](images/{card.card_id}.svg)")
             lines.append("")
 
-        lines.append(f"**图片 Prompt**：")
-        lines.append(f"```")
-        lines.append(card.image_prompt)
-        lines.append(f"```")
+        lines.append(f"**Explanation:** {card.explanation}")
+        lines.append("")
+
+        # Visual metaphor (extracted from image_prompt or card metadata)
+        if hasattr(card, "image_prompt") and card.image_prompt:
+            prompt_preview = card.image_prompt[:120]
+            if len(card.image_prompt) > 120:
+                prompt_preview += "..."
+            lines.append(f"**Visual metaphor:** {prompt_preview}")
+            lines.append("")
+
+        lines.append(f"> **Takeaway:** {card.takeaway}")
         lines.append("")
 
         # Citation-style source line
         if source_labels:
-            citation_parts = [f"`{label}`" for label in source_labels]
+            citation_parts = []
+            for label in source_labels:
+                ch = next((c for c in (chunks or []) if c.chunk_id in card.source_chunk_ids), None)
+                page_str = ""
+                if ch and ch.page_start:
+                    page_str = f" · page {ch.page_start}"
+                citation_parts.append(f"`{label}`{page_str}")
             lines.append(f"**Sources:** {', '.join(citation_parts)}")
         else:
             lines.append(f"**Sources:** `{', '.join(card.source_chunk_ids)}`")
         lines.append("")
 
+        # Image prompt (collapsible via details)
+        lines.append("<details>")
+        lines.append("<summary>Image prompt</summary>")
+        lines.append("")
+        lines.append("```")
+        lines.append(card.image_prompt if card.image_prompt else "(no prompt)")
+        lines.append("```")
+        lines.append("")
+        lines.append("</details>")
+        lines.append("")
+
+        # Source excerpt (collapsible via details)
         if card.source_excerpt:
-            lines.append(f"> Source excerpt: {card.source_excerpt}")
+            lines.append("<details>")
+            lines.append("<summary>Source excerpt</summary>")
+            lines.append("")
+            lines.append(f"> {card.source_excerpt}")
+            lines.append("")
+            lines.append("</details>")
             lines.append("")
 
         lines.append("---")
         lines.append("")
-
-    if skip_images:
-        lines.insert(5, "")
-        lines.insert(6, "Image generation skipped.")
-        lines.insert(7, "")
-    elif image_adapter:
-        lines.insert(5, "")
-        lines.insert(6, f"Image adapter: {image_adapter}")
-        lines.insert(7, "")
 
     # Source Appendix
     if chunks:
@@ -170,5 +198,15 @@ def export_cards_markdown(
                 excerpt = excerpt[:500] + "..."
             lines.append(f"> {excerpt}")
             lines.append("")
+
+    # Image Manifest
+    if not skip_images and image_adapter:
+        lines.append("## Image Manifest")
+        lines.append("")
+        lines.append(f"- **Adapter:** `{image_adapter}`")
+        lines.append(f"- **Images:** {len(cards)} SVG files in `images/` directory")
+        lines.append(f"- **External image API:** no")
+        lines.append(f"- **Generated locally:** yes")
+        lines.append("")
 
     return "\n".join(lines)

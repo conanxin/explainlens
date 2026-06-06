@@ -171,6 +171,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         get_image_adapter,
         write_image_jobs,
         write_image_manifest,
+        get_style,
     )
 
     skip_images = getattr(args, "skip_images", False)
@@ -178,14 +179,22 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     image_style = getattr(args, "image_style", "clean-cartoon-explainer")
     image_records: list[dict] = []
     img_adapter = None
+    img_style_obj = None
 
     if skip_images:
         print(f"   -> Image generation skipped (--skip-images)")
         write_image_jobs(cards, output_dir, skipped=True)
     else:
+        # Validate image style
+        try:
+            img_style_obj = get_style(image_style)
+        except ValueError as e:
+            print(f"Image style error: {e}", file=sys.stderr)
+            return 1
         try:
             img_adapter = get_image_adapter(image_adapter_name)
             print(f"   -> Image adapter: {img_adapter.name} ({img_adapter.version})")
+            print(f"   -> Image style: {img_style_obj.name}")
             write_image_jobs(
                 cards, output_dir,
                 adapter=img_adapter.name,
@@ -200,6 +209,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
                 output_dir,
                 adapter=img_adapter.name,
                 adapter_version=img_adapter.version,
+                style=image_style,
                 uses_external_api=img_adapter.uses_external_api,
                 requires_api_key=img_adapter.requires_api_key,
             )
@@ -229,6 +239,8 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         uses_external_image_api=(
             img_adapter.uses_external_api if img_adapter is not None else False
         ),
+        provider=provider.name,
+        input_type=source_type,
     )
     write_text(cards_html, output_dir / "cards.html")
 
@@ -295,6 +307,8 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         uses_external_image_api=(
             img_adapter.uses_external_api if img_adapter is not None else False
         ),
+        image_style=image_style if not skip_images else None,
+        image_manifest_path="image_manifest.json" if not skip_images else "",
         warnings=warnings,
         source_quality=source_quality,
     )
@@ -516,6 +530,19 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     print("  - External image APIs: disabled")
     print("  - Real image generation: not implemented")
 
+    # Image styles
+    print("\nImage styles:")
+    from explainlens.images import list_styles
+    for info in list_styles():
+        print(f"  - {info['name']}")
+
+    # Visual exports
+    print("\nVisual exports:")
+    print("  - HTML cards: supported")
+    print("  - Markdown cards: supported")
+    print("  - SVG images: supported")
+    print("  - External image APIs: disabled")
+
     print("\nDoctor check complete. No issues found.")
     return 0
 
@@ -580,6 +607,20 @@ def cmd_image_adapters(args: argparse.Namespace) -> int:
         print(f"    Status:       {status}")
         print(f"    External API: {ext_api}")
         print(f"    Requires API key: {needs_key}")
+        print()
+    return 0
+
+
+def cmd_image_styles(args: argparse.Namespace) -> int:
+    """List all available image style presets."""
+    from explainlens.images import list_styles
+
+    print("Available image styles:\n")
+    for info in list_styles():
+        name = info["name"]
+        desc = info["description"]
+        print(f"  - {name}")
+        print(f"    {desc}")
         print()
     return 0
 
@@ -721,6 +762,11 @@ def main() -> None:
         "image-adapters", help="List all available image adapters"
     )
 
+    # image-styles subcommand
+    subparsers.add_parser(
+        "image-styles", help="List all available image style presets"
+    )
+
     args = parser.parse_args()
 
     if args.command == "analyze":
@@ -733,6 +779,8 @@ def main() -> None:
         sys.exit(cmd_validate_endpoint(args))
     elif args.command == "image-adapters":
         sys.exit(cmd_image_adapters(args))
+    elif args.command == "image-styles":
+        sys.exit(cmd_image_styles(args))
     else:
         parser.print_help()
         sys.exit(1)

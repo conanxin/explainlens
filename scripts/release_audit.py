@@ -529,6 +529,43 @@ def main() -> int:
                       "CI must verify cards.html references images/")
     print()
 
+    # --- Image Style Presets (Phase 4B) ---
+    print(">>> Image Style Presets (Phase 4B)")
+    all_pass &= check("src/explainlens/images/styles.py exists",
+                      file_exists("src/explainlens/images/styles.py"),
+                      "Image styles module must exist")
+    all_pass &= check("CLI image-styles command works",
+                      _run_cli_check(["image-styles"], expected_exit=0),
+                      "image-styles CLI must list all styles")
+    all_pass &= check("README links docs/GALLERY.md",
+                      file_contains("README.md", r"docs/GALLERY\.md"),
+                      "README must link to GALLERY.md")
+    all_pass &= check("docs/GALLERY.md exists",
+                      file_exists("docs/GALLERY.md"),
+                      "GALLERY.md must exist")
+    all_pass &= check("docs/assets/demo-preview.svg exists",
+                      file_exists("docs/assets/demo-preview.svg"),
+                      "demo-preview.svg must exist")
+    all_pass &= check("image_manifest contains style",
+                      file_contains("src/explainlens/images/manifest.py", r'"style":\s*style'),
+                      "image_manifest must include style field")
+    all_pass &= check("image_manifest contains generated_locally",
+                      file_contains("src/explainlens/images/manifest.py", r"generated_locally"),
+                      "image_manifest must include generated_locally")
+    all_pass &= check("image_manifest contains external_image_api",
+                      file_contains("src/explainlens/images/manifest.py", r"external_image_api"),
+                      "image_manifest must include external_image_api")
+    all_pass &= check("cards.html contains Image Manifest",
+                      file_contains("src/explainlens/renderer.py", r"Image Manifest"),
+                      "cards.html must contain Image Manifest section")
+    all_pass &= check("cards.md contains Image Manifest",
+                      file_contains("src/explainlens/exporters.py", r"Image Manifest"),
+                      "cards.md must contain Image Manifest section")
+    all_pass &= check("SECURITY mentions local SVG renderers",
+                      file_contains("docs/SECURITY.md", r"local SVG renderers"),
+                      "SECURITY must mention local SVG renderers")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

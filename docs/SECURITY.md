@@ -28,7 +28,7 @@ When future phases add real image generation API support:
 - Use `.env.example` as a template, never commit your actual `.env`
 - Rotate keys if accidentally committed
 
-### Image Adapter Safety (Phase 4A)
+### Image Adapter Safety (Phase 4A/4B)
 
 **Status:** local-only — no external image APIs are called.
 
@@ -36,24 +36,43 @@ When future phases add real image generation API support:
 
 | Adapter | Status | External API | API key | Description |
 |---------|--------|-------------|---------|-------------|
-| placeholder | available | no | no | Generates local SVG placeholder images |
-| fixture | experimental | no | no | Deterministic SVG for CI/testing |
+| placeholder | available | no | no | Generates local SVG placeholder images with style presets |
+| fixture | experimental | no | no | Deterministic SVG for CI/testing with style presets |
+
+**Image style presets (Phase 4B):**
+
+| Style | Description |
+|-------|-------------|
+| clean-cartoon-explainer | Clean cartoon-style, blue palette (default) |
+| whiteboard | Whiteboard sketch, dark marker accents |
+| storybook | Warm storybook, amber palette |
+| technical-diagram | Precise diagram, green palette |
 
 **Safety guarantees:**
 
-1. **No external image APIs.**
-   - Both `placeholder` and `fixture` adapters generate SVG files purely locally.
+1. **Current image adapters are local SVG renderers.**
+   - `placeholder` and `fixture` generate SVG files purely locally.
    - No network requests, no API keys, no external services.
 
-2. **Transparent manifest.**
-   - `image_manifest.json` discloses `uses_external_api: false` and `requires_api_key: false`.
+2. **Future real image adapters must fail closed.**
+   - Any future adapter that calls external image APIs (DALL-E, Stable Diffusion, etc.) must require explicit opt-in.
+   - Must require `--allow-external-image-api` or equivalent flag.
+   - Must validate API keys before creating any output directory.
+
+3. **Image prompts should not include secrets.**
+   - Image prompts are derived from card titles and visual metaphors.
+   - No API keys, passwords, or environment variables appear in prompts.
+   - Prompt content is always safe for display in HTML/Markdown output.
+
+4. **Transparent manifest.**
+   - `image_manifest.json` discloses `style`, `generated_locally`, and `external_image_api`.
    - Every image record includes `safety_notes` confirming local-only generation.
 
-3. **No real images.**
-   - Phase 4A does NOT call DALL-E, Stable Diffusion, or any other image generation API.
-   - Generated SVGs are simple educational illustrations — no photorealistic content.
+5. **No real images.**
+   - Phase 4B does NOT call DALL-E, Stable Diffusion, or any other image generation API.
+   - Generated SVGs are educational illustrations — no photorealistic content.
 
-4. **No document upload.**
+6. **No document upload.**
    - Image adapters only consume card metadata (title, prompt) — source text is never sent to external services.
    - Prompt content is limited to card titles and visual metaphor descriptions.<｜end▁of▁thinking｜>
 

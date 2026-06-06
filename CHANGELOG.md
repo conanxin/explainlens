@@ -10,7 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Image style presets (`clean-cartoon-explainer`, `whiteboard`, `storybook`, `technical-diagram`).
+- `image-styles` CLI command.
+- Visual export gallery documentation (`docs/GALLERY.md`).
+- Image manifest style metadata (`generated_locally`, `external_image_api`, `style`).
+- `image_style` and `image_manifest_path` fields in `run_summary.json`.
+- Doctor command includes image styles and visual export status.
 
+### Changed
+- Improved local SVG placeholder rendering (unified 16:9 960x540 canvas).
+- Improved fixture adapter rendering with style support and scene labels.
+- Improved HTML card layout (Hero with provider/adapter info, Image Manifest section, safety boundary, back-to-top button).
+- Improved Markdown card export (visual metaphor, collapsible image prompt, collapsible source excerpt, Image Manifest section).
+- Updated demo preview SVG to reflect v0.2.x architecture.
+
+### Security
+- Image adapters remain local SVG renderers.
+- `image_manifest.json` includes `generated_locally: true` and `external_image_api: false`.
+- Future real image adapters must fail closed.
+- Image prompts exclude secrets.
+
+### Added (Phase 4A)
 - Image adapter interface (`src/explainlens/images/`).
 - `placeholder` image adapter (local SVG generation, available).
 - `fixture` image adapter (deterministic SVG for CI/testing, experimental).
@@ -22,8 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Image adapter info in `run_summary.json`.
 - Doctor command includes image adapter status.
 
-### Security
-
+### Security (Phase 4A)
 - Image adapters default to local SVG generation.
 - No external image APIs are called.
 - `image_manifest.json` discloses `uses_external_api: false`.

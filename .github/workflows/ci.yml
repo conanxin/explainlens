@@ -170,6 +170,10 @@ jobs:
         run: |
           python -m explainlens.cli image-adapters
 
+      - name: Image styles CLI listing
+        run: |
+          python -m explainlens.cli image-styles
+
       - name: Smoke test image adapter (placeholder)
         run: |
           python -m explainlens.cli analyze \
@@ -182,6 +186,18 @@ jobs:
           grep -q 'images/card_' outputs/ci_image_placeholder/cards.html
           grep -q 'Source Appendix' outputs/ci_image_placeholder/cards.html
 
+      - name: Smoke test image style (storybook)
+        run: |
+          python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_image_storybook \
+            --image-adapter placeholder \
+            --image-style storybook
+          test -f outputs/ci_image_storybook/image_manifest.json
+          grep -q '"style": "storybook"' outputs/ci_image_storybook/image_manifest.json
+          grep -q '"external_image_api": false' outputs/ci_image_storybook/image_manifest.json
+          grep -q "Image Manifest" outputs/ci_image_storybook/cards.html
+
       - name: Smoke test image adapter (skip)
         run: |
           python -m explainlens.cli analyze \
@@ -190,3 +206,14 @@ jobs:
             --skip-images
           test -f outputs/ci_image_skip/image_jobs.json
           test ! -f outputs/ci_image_skip/image_manifest.json
+
+      - name: Check docs/GALLERY.md exists
+        run: |
+          test -f docs/GALLERY.md
+          grep -q "clean-cartoon-explainer" docs/GALLERY.md
+          grep -q "Visual Export Gallery" docs/GALLERY.md
+
+      - name: Check demo-preview.svg updated
+        run: |
+          test -f docs/assets/demo-preview.svg
+          grep -q "v0.2" docs/assets/demo-preview.svg

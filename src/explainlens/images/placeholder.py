@@ -1,7 +1,8 @@
 """Placeholder image adapter — generates local SVG images.
 
 This adapter is fully offline.  It creates one SVG image per ImageCard
-using clean, education-style visuals.  No external API calls are made.
+using clean, education-style visuals with style preset support.
+No external API calls are made.
 """
 
 from __future__ import annotations
@@ -12,135 +13,236 @@ from typing import Sequence
 
 from explainlens.schemas import ImageCard
 from explainlens.images.base import ImageAdapter
+from explainlens.images.styles import get_style, ImageStyle
 
+# ── SVG templates per card index (8 visual metaphors) ─────────────
 
-# ── SVG template per card index ────────────────────────────────
+# Each template uses unified 16:9 canvas (960x540).
+# Variables: {bg}, {accent}, {accent_light}, {label}, {card_num},
+#             {text_primary}, {text_secondary}, {badge_fill}, {badge_text}
 
-_SVG_TEMPLATES = [
-    # 0 — maze / path-finding
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#eef2ff" rx="12"/>'
-        '<path d="M40,40 L120,40 L120,80 L80,80 L80,130 L160,130 L160,40 '
-        'L200,40 L200,160 L240,160 L240,80 L280,80 L280,200 L320,200 L320,40 L360,40" '
-        'fill="none" stroke="#4f6ef7" stroke-width="4" stroke-linecap="round"/>'
-        '<circle cx="55" cy="40" r="8" fill="#4f6ef7" opacity="0.7"/>'
-        '<circle cx="345" cy="200" r="8" fill="#22c55e" opacity="0.8"/>'
-        '<text x="200" y="235" text-anchor="middle" font-size="13" fill="#3730a3" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 1 — magnifier / zoom
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#fff7ed" rx="12"/>'
-        '<ellipse cx="180" cy="118" rx="80" ry="62" fill="#fed7aa" opacity="0.5"/>'
-        '<circle cx="180" cy="118" r="55" fill="none" stroke="#f97316" stroke-width="5"/>'
-        '<line x1="223" y1="153" x2="280" y2="204" stroke="#f97316" stroke-width="7" '
-        'stroke-linecap="round"/>'
-        '<text x="180" y="122" text-anchor="middle" font-size="30" fill="#ea580c" '
-        'font-family="system-ui,sans-serif">?</text>'
-        '<text x="200" y="235" text-anchor="middle" font-size="13" fill="#9a3412" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 2 — split / before-after
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#f0fdf4" rx="12"/>'
-        '<rect x="20" y="40" width="155" height="140" fill="#d1d5db" rx="10" opacity="0.6"/>'
-        '<rect x="225" y="40" width="155" height="140" fill="#4ade80" rx="10" opacity="0.5"/>'
-        '<text x="97" y="115" text-anchor="middle" font-size="14" fill="#6b7280" '
-        'font-family="system-ui,sans-serif">Old approach</text>'
-        '<text x="302" y="115" text-anchor="middle" font-size="14" fill="#166534" '
-        'font-family="system-ui,sans-serif">New approach</text>'
-        '<path d="M175,110 L200,95 L225,110 M200,95 L200,130" fill="none" '
-        'stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
-        '<text x="200" y="218" text-anchor="middle" font-size="13" fill="#15803d" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 3 — tree / branching
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#fefce8" rx="12"/>'
-        '<rect x="188" y="90" width="24" height="120" fill="#92400e" rx="4"/>'
-        '<circle cx="200" cy="72" r="45" fill="#22c55e" opacity="0.55"/>'
-        '<circle cx="145" cy="68" r="30" fill="#3b82f6" opacity="0.5"/>'
-        '<circle cx="255" cy="68" r="30" fill="#f59e0b" opacity="0.5"/>'
-        '<circle cx="130" cy="125" r="22" fill="#ef4444" opacity="0.45"/>'
-        '<circle cx="272" cy="125" r="22" fill="#a855f7" opacity="0.45"/>'
-        '<text x="200" y="235" text-anchor="middle" font-size="13" fill="#854d0e" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 4 — robot / step-by-step
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#eff6ff" rx="12"/>'
-        '<rect x="60" y="100" width="80" height="90" fill="#60a5fa" rx="10"/>'
-        '<rect x="80" y="72" width="40" height="36" fill="#3b82f6" rx="8"/>'
-        '<circle cx="92" cy="90" r="6" fill="#1e3a8a"/>'
-        '<circle cx="108" cy="90" r="6" fill="#1e3a8a"/>'
-        '<rect x="150" y="100" width="140" height="24" fill="#bfdbfe" rx="6"/>'
-        '<rect x="150" y="134" width="140" height="24" fill="#93c5fd" rx="6"/>'
-        '<rect x="150" y="168" width="100" height="24" fill="#60a5fa" rx="6"/>'
-        '<text x="200" y="235" text-anchor="middle" font-size="13" fill="#1e40af" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 5 — detective / evidence
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#faf5ff" rx="12"/>'
-        '<circle cx="100" cy="68" r="28" fill="#c084fc" opacity="0.7"/>'
-        '<line x1="100" y1="96" x2="100" y2="165" stroke="#9333ea" stroke-width="5"/>'
-        '<line x1="100" y1="115" x2="148" y2="130" stroke="#9333ea" stroke-width="4"/>'
-        '<line x1="100" y1="115" x2="52" y2="130" stroke="#9333ea" stroke-width="4"/>'
-        '<rect x="200" y="44" width="170" height="150" fill="#ede9fe" rx="8"/>'
-        '<circle cx="220" cy="82" r="6" fill="#7c3aed"/>'
-        '<circle cx="248" cy="82" r="6" fill="#7c3aed"/>'
-        '<circle cx="276" cy="82" r="6" fill="#a78bfa"/>'
-        '<line x1="215" y1="110" x2="355" y2="110" stroke="#9333ea" stroke-width="2"/>'
-        '<line x1="215" y1="135" x2="355" y2="135" stroke="#9333ea" stroke-width="2"/>'
-        '<line x1="215" y1="160" x2="310" y2="160" stroke="#9333ea" stroke-width="2"/>'
-        '<text x="200" y="235" text-anchor="middle" font-size="13" fill="#6b21a8" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 6 — bridge / gap
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#fff1f2" rx="12"/>'
-        '<rect x="0" y="185" width="400" height="65" fill="#fecdd3" rx="0"/>'
-        '<rect x="0" y="185" width="400" height="4" fill="#fca5a5"/>'
-        '<path d="M40,185 Q200,70 360,185" fill="none" stroke="#f43f5e" stroke-width="7"/>'
-        '<line x1="40" y1="160" x2="40" y2="185" stroke="#e11d48" stroke-width="5"/>'
-        '<line x1="360" y1="160" x2="360" y2="185" stroke="#e11d48" stroke-width="5"/>'
-        '<path d="M120,185 L120,145 M200,185 L200,120 M280,185 L280,145" '
-        'stroke="#fb7185" stroke-width="3" stroke-dasharray="4,3"/>'
-        '<text x="200" y="235" text-anchor="middle" font-size="13" fill="#9f1239" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
-    # 7 — lightbulb / insight
-    (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250">'
-        '<rect width="400" height="250" fill="#fffbeb" rx="12"/>'
-        '<ellipse cx="200" cy="118" rx="55" ry="60" fill="#fde68a" opacity="0.6"/>'
-        '<path d="M164,138 Q200,172 236,138" fill="none" stroke="#f59e0b" stroke-width="5" '
-        'stroke-linecap="round"/>'
-        '<rect x="184" y="160" width="32" height="16" fill="#d97706" rx="3"/>'
-        '<line x1="192" y1="92" x2="175" y2="52" stroke="#fbbf24" stroke-width="3.5"/>'
-        '<line x1="208" y1="92" x2="225" y2="52" stroke="#fbbf24" stroke-width="3.5"/>'
-        '<line x1="200" y1="88" x2="200" y2="44" stroke="#fbbf24" stroke-width="3.5"/>'
-        '<line x1="152" y1="105" x2="110" y2="92" stroke="#fcd34d" stroke-width="2.5"/>'
-        '<line x1="248" y1="105" x2="290" y2="92" stroke="#fcd34d" stroke-width="2.5"/>'
-        '<text x="200" y="215" text-anchor="middle" font-size="13" fill="#92400e" '
-        'font-family="system-ui,sans-serif" font-weight="600">{label}</text>'
-        '</svg>'
-    ),
+_SVG_WRAPPER_TOP = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540">'
+    '<rect width="960" height="540" fill="{bg}" rx="16"/>'
+    # Top badge
+    '<rect x="20" y="20" width="120" height="28" fill="{badge_fill}" rx="6" opacity="0.9"/>'
+    '<text x="80" y="39" text-anchor="middle" font-size="11" fill="{badge_text}" '
+    'font-family="system-ui,sans-serif" font-weight="700">ExplainLens</text>'
+    # Card number
+    '<text x="940" y="39" text-anchor="end" font-size="11" fill="{text_secondary}" '
+    'font-family="system-ui,sans-serif">{card_num}</text>'
+)
+
+_SVG_WRAPPER_BOTTOM = (
+    # Metaphor label
+    '<text x="480" y="505" text-anchor="middle" font-size="{title_size}" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="700">{label}</text>'
+    # Footer note
+    '<text x="480" y="528" text-anchor="middle" font-size="9" fill="{text_secondary}" '
+    'font-family="system-ui,sans-serif">'
+    'Generated locally &middot; no external image API</text>'
+    '</svg>'
+)
+
+# ── Visual metaphor scenes (center area, placed at y=60 to y=490) ──
+
+_SCENE_MAZE = (
+    '<g transform="translate(160,60)">'
+    '<path d="M40,0 L200,0 L200,80 L120,80 L120,160 L260,160 L260,0 '
+    'L320,0 L320,260 L400,260 L400,120 L480,120 L480,360 L560,360 L560,0 L640,0" '
+    'fill="none" stroke="{accent}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
+    '<circle cx="60" cy="0" r="12" fill="{accent}" opacity="0.6"/>'
+    '<circle cx="620" cy="360" r="12" fill="{text_secondary}" opacity="0.6"/>'
+    '<text x="340" y="395" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Complex path &rarr; one solution</text>'
+    '</g>'
+)
+
+_SCENE_MAGNIFIER = (
+    '<g transform="translate(240,60)">'
+    '<ellipse cx="200" cy="210" rx="120" ry="110" fill="{accent_light}" opacity="0.3"/>'
+    '<circle cx="200" cy="210" r="95" fill="none" stroke="{accent}" stroke-width="6"/>'
+    '<line x1="272" y1="275" x2="380" y2="370" stroke="{accent}" stroke-width="8" '
+    'stroke-linecap="round"/>'
+    '<text x="200" y="218" text-anchor="middle" font-size="48" fill="{accent}" '
+    'font-family="system-ui,sans-serif" font-weight="700">?</text>'
+    '<text x="200" y="395" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Zoom in on what matters</text>'
+    '</g>'
+)
+
+_SCENE_SPLIT = (
+    '<g transform="translate(60,60)">'
+    '<rect x="20" y="30" width="265" height="280" fill="#e5e7eb" rx="16" opacity="0.5"/>'
+    '<rect x="555" y="30" width="265" height="280" fill="{accent_light}" rx="16" opacity="0.4"/>'
+    '<text x="152" y="178" text-anchor="middle" font-size="20" fill="#6b7280" '
+    'font-family="system-ui,sans-serif" font-weight="600">Old approach</text>'
+    '<text x="687" y="178" text-anchor="middle" font-size="20" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">New approach</text>'
+    '<path d="M420,170 L380,140 L350,120 M420,170 L380,200 L350,220" '
+    'fill="none" stroke="{accent}" stroke-width="5" stroke-linecap="round"/>'
+    '<text x="420" y="400" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Before vs. after</text>'
+    '</g>'
+)
+
+_SCENE_TREE = (
+    '<g transform="translate(0,40)">'
+    '<rect x="460" y="80" width="40" height="250" fill="#92400e" rx="6" opacity="0.7"/>'
+    '<circle cx="480" cy="50" r="70" fill="#4ade80" opacity="0.45"/>'
+    '<circle cx="390" cy="45" r="48" fill="{accent}" opacity="0.4"/>'
+    '<circle cx="570" cy="45" r="48" fill="#f59e0b" opacity="0.4"/>'
+    '<circle cx="360" cy="140" r="35" fill="#ef4444" opacity="0.35"/>'
+    '<circle cx="600" cy="140" r="35" fill="#a855f7" opacity="0.35"/>'
+    '<circle cx="340" cy="210" r="26" fill="{accent}" opacity="0.3"/>'
+    '<circle cx="620" cy="210" r="26" fill="#22d3ee" opacity="0.3"/>'
+    '<text x="480" y="400" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Concepts branch like a tree</text>'
+    '</g>'
+)
+
+_SCENE_ROBOT = (
+    '<g transform="translate(60,60)">'
+    # Robot body
+    '<rect x="140" y="130" width="140" height="170" fill="{accent}" rx="18" opacity="0.8"/>'
+    '<rect x="170" y="70" width="80" height="70" fill="{accent}" rx="14" opacity="0.85"/>'
+    '<circle cx="190" cy="102" r="10" fill="{bg}"/>'
+    '<circle cx="230" cy="102" r="10" fill="{bg}"/>'
+    '<rect x="180" y="200" width="60" height="12" fill="{accent}" rx="4" opacity="0.5"/>'
+    '<rect x="180" y="222" width="60" height="12" fill="{accent}" rx="4" opacity="0.5"/>'
+    '<rect x="180" y="244" width="60" height="12" fill="{accent}" rx="4" opacity="0.5"/>'
+    '<rect x="180" y="266" width="60" height="12" fill="{accent}" rx="4" opacity="0.5"/>'
+    # Speech bubble steps
+    '<rect x="320" y="100" width="240" height="36" fill="{accent_light}" rx="8" opacity="0.5"/>'
+    '<rect x="320" y="150" width="240" height="36" fill="{accent_light}" rx="8" opacity="0.6"/>'
+    '<rect x="320" y="200" width="200" height="36" fill="{accent_light}" rx="8" opacity="0.7"/>'
+    '<text x="340" y="124" font-size="13" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif">Step A: Identify problem</text>'
+    '<text x="340" y="174" font-size="13" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif">Step B: Apply method</text>'
+    '<text x="340" y="224" font-size="13" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif">Step C: Verify result</text>'
+    '<text x="360" y="395" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Step-by-step mechanism</text>'
+    '</g>'
+)
+
+_SCENE_DETECTIVE = (
+    '<g transform="translate(40,40)">'
+    # Detective figure
+    '<circle cx="120" cy="90" r="40" fill="{accent}" opacity="0.6"/>'
+    '<line x1="120" y1="130" x2="120" y2="260" stroke="{accent}" stroke-width="8" opacity="0.6"/>'
+    '<line x1="120" y1="170" x2="200" y2="200" stroke="{accent}" stroke-width="6" opacity="0.6"/>'
+    '<line x1="120" y1="170" x2="40" y2="200" stroke="{accent}" stroke-width="6" opacity="0.6"/>'
+    # Evidence board
+    '<rect x="260" y="40" width="380" height="280" fill="{accent_light}" rx="12" opacity="0.4"/>'
+    '<rect x="260" y="40" width="380" height="40" fill="{accent}" rx="12" opacity="0.5"/>'
+    '<rect x="260" y="52" width="380" height="28" fill="{accent}" opacity="0.5"/>'
+    '<text x="450" y="70" text-anchor="middle" font-size="13" fill="{badge_text}" '
+    'font-family="system-ui,sans-serif" font-weight="600">EVIDENCE BOARD</text>'
+    # Evidence items
+    '<circle cx="300" cy="115" r="10" fill="{accent}" opacity="0.5"/>'
+    '<circle cx="340" cy="115" r="10" fill="{accent}" opacity="0.4"/>'
+    '<circle cx="380" cy="115" r="10" fill="{text_secondary}" opacity="0.3"/>'
+    '<line x1="290" y1="155" x2="610" y2="155" stroke="{accent}" stroke-width="2" opacity="0.4"/>'
+    '<line x1="290" y1="185" x2="610" y2="185" stroke="{accent}" stroke-width="2" opacity="0.4"/>'
+    '<line x1="290" y1="215" x2="560" y2="215" stroke="{accent}" stroke-width="2" opacity="0.4"/>'
+    '<line x1="290" y1="245" x2="610" y2="245" stroke="{accent}" stroke-width="2" opacity="0.4"/>'
+    '<line x1="290" y1="275" x2="500" y2="275" stroke="{accent}" stroke-width="2" opacity="0.4"/>'
+    '<text x="430" y="400" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Evidence board</text>'
+    '</g>'
+)
+
+_SCENE_BRIDGE = (
+    '<g transform="translate(0,40)">'
+    '<rect x="0" y="310" width="960" height="190" fill="{accent_light}" rx="0" opacity="0.3"/>'
+    '<rect x="0" y="310" width="960" height="6" fill="{accent}" opacity="0.5"/>'
+    '<path d="M80,310 Q480,80 880,310" fill="none" stroke="{accent}" stroke-width="10" '
+    'stroke-linecap="round" opacity="0.8"/>'
+    '<line x1="80" y1="270" x2="80" y2="310" stroke="{accent}" stroke-width="8" '
+    'stroke-linecap="round" opacity="0.7"/>'
+    '<line x1="880" y1="270" x2="880" y2="310" stroke="{accent}" stroke-width="8" '
+    'stroke-linecap="round" opacity="0.7"/>'
+    '<path d="M220,310 L220,240 M400,310 L400,200 M580,310 L580,240 M760,310 L760,240" '
+    'stroke="{accent}" stroke-width="4" stroke-dasharray="6,4" opacity="0.5"/>'
+    '<text x="480" y="400" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Bridge the gap</text>'
+    '</g>'
+)
+
+_SCENE_LIGHTBULB = (
+    '<g transform="translate(0,20)">'
+    '<ellipse cx="480" cy="220" rx="110" ry="120" fill="{accent_light}" opacity="0.4"/>'
+    '<path d="M408,280 Q480,360 552,280" fill="none" stroke="{accent}" stroke-width="7" '
+    'stroke-linecap="round" opacity="0.7"/>'
+    '<rect x="448" y="340" width="64" height="28" fill="{accent}" rx="6" opacity="0.6"/>'
+    # Light rays
+    '<line x1="480" y1="170" x2="480" y2="80" stroke="{accent}" stroke-width="5" opacity="0.5"/>'
+    '<line x1="430" y1="180" x2="380" y2="100" stroke="{accent}" stroke-width="5" opacity="0.4"/>'
+    '<line x1="530" y1="180" x2="580" y2="100" stroke="{accent}" stroke-width="5" opacity="0.4"/>'
+    '<line x1="390" y1="210" x2="320" y2="170" stroke="{accent}" stroke-width="4" opacity="0.3"/>'
+    '<line x1="570" y1="210" x2="640" y2="170" stroke="{accent}" stroke-width="4" opacity="0.3"/>'
+    '<text x="480" y="430" text-anchor="middle" font-size="16" fill="{text_primary}" '
+    'font-family="system-ui,sans-serif" font-weight="600">Insight changes the picture</text>'
+    '</g>'
+)
+
+_SCENE_TEMPLATES = [
+    _SCENE_MAZE,
+    _SCENE_MAGNIFIER,
+    _SCENE_SPLIT,
+    _SCENE_TREE,
+    _SCENE_ROBOT,
+    _SCENE_DETECTIVE,
+    _SCENE_BRIDGE,
+    _SCENE_LIGHTBULB,
 ]
+
+
+def _build_svg(
+    scene_idx: int,
+    card_num_str: str,
+    label: str,
+    style: ImageStyle,
+) -> str:
+    """Build a complete SVG for one card using the given style.
+
+    Args:
+        scene_idx: Index into _SCENE_TEMPLATES (0-7).
+        card_num_str: Card number display string (e.g. "Card 03").
+        label: Card title/label text.
+        style: ImageStyle profile.
+
+    Returns:
+        Complete SVG string.
+    """
+    idx = scene_idx % len(_SCENE_TEMPLATES)
+    scene = _SCENE_TEMPLATES[idx]
+
+    top = _SVG_WRAPPER_TOP.format(
+        bg=style.background,
+        badge_fill=style.card_badge_fill,
+        badge_text=style.card_badge_text,
+        text_secondary=style.text_secondary,
+        card_num=card_num_str,
+    )
+    bottom = _SVG_WRAPPER_BOTTOM.format(
+        title_size=style.title_size,
+        text_primary=style.text_primary,
+        text_secondary=style.text_secondary,
+        label=label,
+    )
+    body = scene.format(
+        bg=style.background,
+        accent=style.accent,
+        accent_light=style.accent_light,
+        text_primary=style.text_primary,
+        text_secondary=style.text_secondary,
+        badge_fill=style.card_badge_fill,
+        badge_text=style.card_badge_text,
+    )
+    return top + body + bottom
 
 
 class PlaceholderImageAdapter(ImageAdapter):
@@ -148,7 +250,7 @@ class PlaceholderImageAdapter(ImageAdapter):
 
     Fully offline — no external APIs are called.  Each SVG is a
     clean, education-style illustration labelled with the card's
-    visual metaphor.
+    visual metaphor.  Supports style presets.
     """
 
     name = "placeholder"
@@ -167,18 +269,30 @@ class PlaceholderImageAdapter(ImageAdapter):
         """Generate SVG placeholder images for all cards.
 
         Writes images/ subdirectory under output_dir with one SVG per card.
+
+        Args:
+            cards: List of ImageCard objects.
+            output_dir: Output directory path.
+            style: Visual style name (default: clean-cartoon-explainer).
+
+        Returns:
+            List of image record dicts.
+
+        Raises:
+            ValueError: If style name is unknown.
         """
+        style_obj = get_style(style)
         images_dir = output_dir / "images"
         images_dir.mkdir(parents=True, exist_ok=True)
 
         records: list[dict] = []
 
         for i, card in enumerate(cards):
-            idx = i % len(_SVG_TEMPLATES)
             image_id = f"image_{i + 1:03d}"
-
+            card_num_str = f"Card {i + 1:02d}"
             label = card.title[:40] if card.title else f"Card {i + 1}"
-            svg = _SVG_TEMPLATES[idx].format(label=label)
+
+            svg = _build_svg(i, card_num_str, label, style_obj)
 
             image_path = images_dir / f"{card.card_id}.svg"
             image_path.write_text(svg, encoding="utf-8")
@@ -187,6 +301,7 @@ class PlaceholderImageAdapter(ImageAdapter):
                 "image_id": image_id,
                 "card_id": card.card_id,
                 "adapter": self.name,
+                "style": style,
                 "status": "generated",
                 "path": f"images/{card.card_id}.svg",
                 "prompt": card.image_prompt,

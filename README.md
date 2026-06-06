@@ -39,6 +39,8 @@ ExplainLens 是一个开源工具，它像一位 AI 教学导演，能够：
 Run `outputs/sample_run/cards.html` to see 8 visual explainer cards in your browser.
 See [docs/DEMO.md](docs/DEMO.md) for the full demo guide.
 
+See [docs/GALLERY.md](docs/GALLERY.md) for the visual export gallery.
+
 ## Demo
 
 See [docs/DEMO.md](docs/DEMO.md).

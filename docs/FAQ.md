@@ -405,12 +405,76 @@ http://172.16.x.x/...        (私有局域网)
 
 ## 当前版本会生成真实图片吗？
 
-**不会。** 当前版本只生成：
+**不会。** ExplainLens 当前版本的图片适配器都是纯本地 SVG 渲染器：
 
-- **SVG 占位图**：在 HTML 卡片中展示构图概念
-- **Image prompts**：英文文本提示词，可后续喂给 Stable Diffusion / DALL-E
+- **`placeholder`** — 生成本地 SVG 插图（教育风格，支持 4 种视觉样式）
+- **`fixture`** — 确定性 SVG 用于 CI/测试
 
-Phase 4 将提供真实图片生成适配器。
+所有图片均为本地生成，不调用 DALL-E、Stable Diffusion、Midjourney 或任何外部图片 API。
+
+---
+
+## 什么是 image styles？
+
+Image styles 是视觉样式预设，控制生成的 SVG 图片的外观：
+
+- **`clean-cartoon-explainer`** — 干净的卡通风格，蓝色调（默认）
+- **`whiteboard`** — 白板手绘风格，深灰色标记
+- **`storybook`** — 温暖的绘本风格，琥珀色/橙色调
+- **`technical-diagram`** — 精密的技术图表风格，绿色调
+
+查看所有可用样式：
+
+```bash
+python -m explainlens.cli image-styles
+```
+
+选择样式：
+
+```bash
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/demo \
+  --image-style storybook
+```
+
+---
+
+## 可以在演示文稿中使用 SVG 图片吗？
+
+**可以。** 所有生成的 SVG 文件都是独立的矢量图形，可以直接：
+
+- 拖入 PowerPoint / Keynote / Google Slides
+- 嵌入 Notion / Obsidian / 其他 Markdown 编辑器
+- 在浏览器中直接打开查看
+
+SVG 文件不包含外部资源、不依赖外部字体、不引用网络 URL。
+
+---
+
+## 图片生成会上传我的文本吗？
+
+**不会。** 当前所有图片适配器（`placeholder`、`fixture`）都是纯本地 SVG 渲染器：
+
+- 不发送任何网络请求
+- 不上传文档内容
+- 不读取或使用 API key
+- 所有处理都在本地完成
+
+`image_manifest.json` 中明确标注 `"external_image_api": false`。
+
+---
+
+## 为什么图片是 SVG 占位图？
+
+当前版本使用 SVG 占位图是因为：
+
+1. **离线优先** — 不依赖外部 API，保护隐私
+2. **确定性输出** — 每次运行结果一致，适合 CI/测试
+3. **教育表达** — 视觉隐喻（迷宫、放大镜、桥梁等）比抽象 AI 图片更有教学意义
+
+Phase 4B 已对 SVG 视觉质量进行了大幅优化：统一 16:9 画幅（960x540）、4 种视觉样式预设、
+改进的卡片布局和构图。未来版本会在此接口基础上添加真实图片生成适配器。
 
 ---
 
@@ -639,7 +703,3 @@ examples/configs/
 - 理解 expected JSON 结构
 
 详见 [Local Providers Guide](LOCAL_PROVIDERS.md)。
-
----
-
-## 当前版本会生成真实图片吗？

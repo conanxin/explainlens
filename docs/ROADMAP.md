@@ -149,7 +149,7 @@
 
 ## Phase 4A: Image Adapter Interface (Local)
 
-**In Progress**
+**Complete**
 
 - [x] Image adapter abstract interface (`src/explainlens/images/base.py`)
 - [x] `placeholder` image adapter — generates local SVG placeholder images
@@ -168,6 +168,27 @@
 - No real image generation (DALL-E / Stable Diffusion)
 - All image adapters are local-only
 - Default adapter: placeholder
+
+## Phase 4B: Visual Polish & Export Quality
+
+**In Progress**
+
+- [x] Image style presets (`clean-cartoon-explainer`, `whiteboard`, `storybook`, `technical-diagram`)
+- [x] `image-styles` CLI command
+- [x] Enhanced SVG rendering (unified 16:9 canvas, style-aware)
+- [x] Enhanced HTML card layout (Hero, Image Manifest, safety boundary)
+- [x] Enhanced Markdown card export (visual metaphor, collapsible sections)
+- [x] Demo gallery documentation (`docs/GALLERY.md`)
+- [x] Updated demo preview SVG (v0.2.x architecture)
+- [x] Image manifest style metadata
+- [x] Release audit updated for Phase 4B
+- [x] CI updated for style smoke tests
+
+**Constraints:**
+- No real image generation APIs
+- No localhost image services
+- Pure visual polish and export quality
+- All images remain local SVG renderers
 
 ## Phase 4: Real Image Generation Adapter
 

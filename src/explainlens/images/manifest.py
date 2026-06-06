@@ -11,6 +11,7 @@ def build_image_manifest(
     *,
     adapter: str = "placeholder",
     adapter_version: str = "placeholder-v0.1",
+    style: str = "clean-cartoon-explainer",
     uses_external_api: bool = False,
     requires_api_key: bool = False,
 ) -> dict:
@@ -20,6 +21,7 @@ def build_image_manifest(
         image_records: List of image record dicts from the adapter.
         adapter: Name of the image adapter.
         adapter_version: Version of the image adapter.
+        style: Visual style preset name.
         uses_external_api: Whether external APIs were used.
         requires_api_key: Whether API keys were required.
 
@@ -29,6 +31,9 @@ def build_image_manifest(
     return {
         "adapter": adapter,
         "adapter_version": adapter_version,
+        "style": style,
+        "generated_locally": not uses_external_api,
+        "external_image_api": uses_external_api,
         "uses_external_api": uses_external_api,
         "requires_api_key": requires_api_key,
         "image_count": len(image_records),
@@ -42,6 +47,7 @@ def write_image_manifest(
     *,
     adapter: str = "placeholder",
     adapter_version: str = "placeholder-v0.1",
+    style: str = "clean-cartoon-explainer",
     uses_external_api: bool = False,
     requires_api_key: bool = False,
 ) -> dict:
@@ -52,6 +58,7 @@ def write_image_manifest(
         output_dir: Directory to write image_manifest.json into.
         adapter: Name of the image adapter.
         adapter_version: Version of the image adapter.
+        style: Visual style preset name.
         uses_external_api: Whether external APIs were used.
         requires_api_key: Whether API keys were required.
 
@@ -62,6 +69,7 @@ def write_image_manifest(
         image_records,
         adapter=adapter,
         adapter_version=adapter_version,
+        style=style,
         uses_external_api=uses_external_api,
         requires_api_key=requires_api_key,
     )

@@ -93,7 +93,8 @@ class TestHTMLRendering:
             image_adapter="placeholder",
             uses_external_image_api=False,
         )
-        assert "Image adapter: placeholder" in html
+        assert "Image Adapter" in html
+        assert "placeholder" in html
         assert "External image API: no" in html
 
     def test_html_footer_no_image_adapter(self):
@@ -118,7 +119,8 @@ class TestMarkdownRendering:
             skip_images=False,
         )
         assert "images/card_" in md
-        assert "Image adapter: placeholder" in md
+        assert "**Adapter:**" in md
+        assert "`placeholder`" in md
 
     def test_md_skip_images_has_skip_message(self):
         cards = create_cards_from_storyboard(_make_storyboard(4))

@@ -767,4 +767,5 @@ The `get_provider()` function will raise `RuntimeError` with a clear message.
 - [SECURITY](SECURITY.md) — Security policy and provider safety
 - [ROADMAP](ROADMAP.md) — Planned provider implementations
 - [ARCHITECTURE](ARCHITECTURE.md) — System architecture overview
-- **Image Adapters** — See `python -m explainlens.cli image-adapters` and [SECURITY](SECURITY.md#image-adapter-safety-phase-4a) for the image adapter layer (separate from providers).
+- **Image Adapters** — See `python -m explainlens.cli image-adapters` and [SECURITY](SECURITY.md#image-adapter-safety-phase-4a4b) for the image adapter layer (separate from providers).
+- **Image Styles** — See `python -m explainlens.cli image-styles` and [GALLERY](GALLERY.md) for visual style presets.
