@@ -597,6 +597,46 @@ def main() -> int:
                       "README must mention openai-image")
     print()
 
+    # --- Local Web UI (Phase 5A) ---
+    print(">>> Local Web UI (Phase 5A)")
+    all_pass &= check("src/explainlens/web/app.py exists",
+                      file_exists("src/explainlens/web/app.py"),
+                      "Web app must exist")
+    all_pass &= check("src/explainlens/web/run_manager.py exists",
+                      file_exists("src/explainlens/web/run_manager.py"),
+                      "Run manager must exist")
+    all_pass &= check("docs/WEB_UI.md exists",
+                      file_exists("docs/WEB_UI.md"),
+                      "Web UI docs must exist")
+    all_pass &= check("README contains python -m explainlens.web",
+                      file_contains("README.md", r"python -m explainlens\.web"),
+                      "README must mention web UI launch command")
+    all_pass &= check("Web UI rejects openai provider",
+                      file_contains("src/explainlens/web/app.py", r"BLOCKED_PROVIDERS"),
+                      "Web UI must block openai provider")
+    all_pass &= check("Web UI rejects openai-image adapter",
+                      file_contains("src/explainlens/web/app.py", r"BLOCKED_IMAGE_ADAPTERS"),
+                      "Web UI must block openai-image adapter")
+    all_pass &= check("Web UI templates exist",
+                      file_exists("src/explainlens/web/templates/layout.html") and
+                      file_exists("src/explainlens/web/templates/dashboard.html") and
+                      file_exists("src/explainlens/web/templates/run_detail.html"),
+                      "All three templates must exist")
+    all_pass &= check("Templates contain three-column layout markers",
+                      file_contains("src/explainlens/web/templates/layout.html", r"sidebar") and
+                      file_contains("src/explainlens/web/templates/layout.html", r"workspace") and
+                      file_contains("src/explainlens/web/templates/layout.html", r"preview"),
+                      "Templates must have sidebar/workspace/preview layout")
+    all_pass &= check("No API key in templates",
+                      not file_contains("src/explainlens/web/templates/layout.html", r"sk-[a-zA-Z0-9_-]{20,}") and
+                      not file_contains("src/explainlens/web/templates/dashboard.html", r"sk-[a-zA-Z0-9_-]{20,}") and
+                      not file_contains("src/explainlens/web/templates/run_detail.html", r"sk-[a-zA-Z0-9_-]{20,}"),
+                      "No API key in templates")
+    all_pass &= check("docs/WEB_UI.md mentions 127.0.0.1",
+                      file_contains("docs/WEB_UI.md", r"127\.0\.0\.1"),
+                      "Web UI docs must mention 127.0.0.1 binding")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

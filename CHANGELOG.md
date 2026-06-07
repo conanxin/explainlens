@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Local Codex-style Web UI prototype.
+- Run dashboard with New Run form.
+- Cards preview iframe in right pane.
+- Artifact browser (JSON, Markdown, HTML, images).
+- Doctor/providers/image-adapters/image-styles API endpoints.
+- Three-column dark-theme layout (sidebar, workspace, preview).
+- Safety gates: external API providers and image adapters blocked in UI.
+- Run manager with background thread analysis and async status polling.
+
 ---
 
 ## [v0.3.0-alpha] - 2026-06-07

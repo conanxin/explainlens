@@ -1,0 +1,267 @@
+{% extends "layout.html" %}
+{% block title %}ExplainLens Dashboard{% endblock %}
+
+{% block sidebar_runs %}
+{% if runs %}
+    {% for run in runs %}
+    <a href="/runs/{{ run.run_id }}" class="run-item {{ run.status }}">
+        <span class="run-status-dot {{ run.status }}"></span>
+        <span class="run-name">{{ run.run_id[:26] }}{% if run.run_id|length > 26 %}...{% endif %}</span>
+        <span class="run-meta">{{ run.provider }}</span>
+    </a>
+    {% endfor %}
+{% else %}
+    <p class="sidebar-empty">No runs yet. Start a new analysis.</p>
+{% endif %}
+{% endblock %}
+
+{% block workspace %}
+<div class="workspace-content">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1>New Analysis Run</h1>
+        <p class="page-subtitle">Select input, provider, and visual settings to create explainer cards.</p>
+    </div>
+
+    <!-- New Run Form -->
+    <form id="new-run-form" class="run-form">
+        <div class="form-group">
+            <label for="input-path">Input File</label>
+            <input
+                type="text"
+                id="input-path"
+                name="input"
+                placeholder="examples/sample_article.txt"
+                value="examples/sample_article.txt"
+                required
+            >
+            <span class="form-hint">Path to .txt, .md, or .pdf file (relative or absolute)</span>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="provider">Provider</label>
+                <select id="provider" name="provider">
+                    {% for p in providers %}
+                    <option value="{{ p.name }}" {% if p.blocked_in_ui %}disabled class="external-option"{% endif %}>
+                        {{ p.label }}{% if p.blocked_in_ui %} [disabled in UI]{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% for p in providers %}
+                    {% if p.blocked_in_ui %}
+                    <span class="form-warning" data-for="provider" data-value="{{ p.name }}">
+                        External API provider &mdash; disabled in this local UI. Use CLI with --allow-external-api.
+                    </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="image-adapter">Image Adapter</label>
+                <select id="image-adapter" name="image_adapter">
+                    {% for a in image_adapters %}
+                    <option value="{{ a.name }}" {% if a.blocked_in_ui %}disabled class="external-option"{% endif %}>
+                        {{ a.name }}{% if a.blocked_in_ui %} [disabled in UI]{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% for a in image_adapters %}
+                    {% if a.blocked_in_ui %}
+                    <span class="form-warning" data-for="image-adapter" data-value="{{ a.name }}">
+                        External image API &mdash; disabled in this local UI. Use CLI with --allow-external-images.
+                    </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="image-style">Image Style</label>
+                <select id="image-style" name="image_style">
+                    {% for style in image_styles %}
+                    <option value="{{ style }}">{{ style }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group form-checkbox">
+                <label>
+                    <input type="checkbox" id="skip-images" name="skip_images">
+                    Skip image generation
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" id="start-run-btn" class="btn btn-primary">
+                Start Run
+            </button>
+            <span id="form-status" class="form-status"></span>
+        </div>
+    </form>
+
+    <!-- Run Status Area -->
+    <div id="run-status" class="run-status hidden">
+        <div class="status-header">
+            <h3 id="status-title">Running...</h3>
+            <span id="status-badge" class="badge-running">running</span>
+        </div>
+        <pre id="status-log" class="status-log"></pre>
+        <div id="status-error" class="status-error hidden"></div>
+        <a id="status-view-btn" class="btn btn-secondary hidden" href="#">View Results</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block preview %}
+<div class="preview-placeholder">
+    <div class="preview-icon">&#x25C9;</div>
+    <h3>Cards Preview</h3>
+    <p>Start a run to preview the generated explainer cards here.</p>
+    <p class="preview-hint">Select an input file and click <strong>Start Run</strong> in the workspace.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('new-run-form');
+    const statusArea = document.getElementById('run-status');
+    const statusTitle = document.getElementById('status-title');
+    const statusBadge = document.getElementById('status-badge');
+    const statusLog = document.getElementById('status-log');
+    const statusError = document.getElementById('status-error');
+    const statusViewBtn = document.getElementById('status-view-btn');
+    const formStatus = document.getElementById('form-status');
+    const previewPane = document.getElementById('preview-pane');
+    const providerSelect = document.getElementById('provider');
+    const imageAdapterSelect = document.getElementById('image-adapter');
+
+    // Show/hide warnings based on selection
+    function updateWarnings() {
+        const pWarnings = document.querySelectorAll('.form-warning[data-for="provider"]');
+        const aWarnings = document.querySelectorAll('.form-warning[data-for="image-adapter"]');
+
+        pWarnings.forEach(function(w) {
+            w.style.display = w.dataset.value === providerSelect.value ? 'block' : 'none';
+        });
+        aWarnings.forEach(function(w) {
+            w.style.display = w.dataset.value === imageAdapterSelect.value ? 'block' : 'none';
+        });
+    }
+
+    providerSelect.addEventListener('change', updateWarnings);
+    imageAdapterSelect.addEventListener('change', updateWarnings);
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const input = document.getElementById('input-path').value.trim();
+        const provider = providerSelect.value;
+        const imageAdapter = imageAdapterSelect.value;
+        const imageStyle = document.getElementById('image-style').value;
+        const skipImages = document.getElementById('skip-images').checked;
+
+        // Disable button
+        const btn = document.getElementById('start-run-btn');
+        btn.disabled = true;
+        btn.textContent = 'Starting...';
+        formStatus.textContent = '';
+
+        try {
+            const resp = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    input: input,
+                    provider: provider,
+                    image_adapter: imageAdapter,
+                    image_style: imageStyle,
+                    skip_images: skipImages
+                })
+            });
+
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                formStatus.textContent = 'Error: ' + (data.detail || 'Unknown error');
+                formStatus.className = 'form-status error';
+                btn.disabled = false;
+                btn.textContent = 'Start Run';
+                return;
+            }
+
+            // Show status area
+            statusArea.classList.remove('hidden');
+            statusTitle.textContent = 'Run: ' + data.run_id;
+            statusBadge.textContent = 'running';
+            statusBadge.className = 'badge-running';
+            statusLog.textContent = 'Analysis started...\n';
+            statusError.classList.add('hidden');
+            statusViewBtn.classList.add('hidden');
+
+            // Poll for status
+            const runId = data.run_id;
+            pollRunStatus(runId);
+
+        } catch (err) {
+            formStatus.textContent = 'Error: ' + err.message;
+            formStatus.className = 'form-status error';
+            btn.disabled = false;
+            btn.textContent = 'Start Run';
+        }
+    });
+
+    async function pollRunStatus(runId) {
+        try {
+            const resp = await fetch('/api/runs/' + runId);
+            const data = await resp.json();
+
+            if (data.status === 'running') {
+                statusBadge.textContent = 'running';
+                statusBadge.className = 'badge-running';
+                // Try to get logs
+                try {
+                    const logResp = await fetch('/api/runs/' + runId + '/artifact/logs.txt');
+                    if (logResp.ok) {
+                        statusLog.textContent = await logResp.text();
+                    }
+                } catch(e) {}
+                setTimeout(function() { pollRunStatus(runId); }, 1000);
+            } else if (data.status === 'success') {
+                statusBadge.textContent = 'success';
+                statusBadge.className = 'badge-success';
+                statusTitle.textContent = 'Run Complete: ' + runId;
+                statusViewBtn.href = '/runs/' + runId;
+                statusViewBtn.classList.remove('hidden');
+                document.getElementById('start-run-btn').disabled = false;
+                document.getElementById('start-run-btn').textContent = 'Start Run';
+
+                // Load preview
+                try {
+                    previewPane.innerHTML = '<iframe src="/api/runs/' + runId + '/artifact/cards.html" class="preview-iframe"></iframe>';
+                } catch(e) {}
+
+                // Refresh sidebar
+                location.reload();
+            } else {
+                statusBadge.textContent = 'failed';
+                statusBadge.className = 'badge-failed';
+                statusTitle.textContent = 'Run Failed: ' + runId;
+                if (data.error) {
+                    statusError.textContent = data.error;
+                    statusError.classList.remove('hidden');
+                }
+                document.getElementById('start-run-btn').disabled = false;
+                document.getElementById('start-run-btn').textContent = 'Start Run';
+            }
+        } catch (err) {
+            statusLog.textContent += '\n[Polling error: ' + err.message + ']';
+            setTimeout(function() { pollRunStatus(runId); }, 2000);
+        }
+    }
+});
+</script>
+{% endblock %}

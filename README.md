@@ -59,6 +59,17 @@ See [docs/DEMO.md](docs/DEMO.md).
 - 📊 **Source Index** — `source_index.json` 记录 chunk/card/page 交叉引用
 - 🔌 **Provider Interface** — 可插拔分析后端（rule-based + mock-llm + local-fixture + local-http），不调用外部 API
 - 🧩 **SVG 占位图** — 无外部 API 依赖，纯本地运行
+- 🌐 **Local Web UI** — 三栏 Codex 风格本地仪表盘，无需 CLI 命令
+
+## Local Web UI
+
+```bash
+python -m explainlens.web --host 127.0.0.1 --port 8765
+```
+
+Then open http://127.0.0.1:8765.
+
+See [docs/WEB_UI.md](docs/WEB_UI.md) for full documentation.
 
 ## 安装
 
