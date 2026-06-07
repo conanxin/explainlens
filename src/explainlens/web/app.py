@@ -236,7 +236,10 @@ def create_app() -> FastAPI:
                 }
                 for a in image_adapters
             ],
-            "image_styles": [s["name"] for s in styles],
+            "image_styles": [
+                {"name": s["name"], "display_name": _image_style_display_name(s["name"])}
+                for s in styles
+            ],
             "safety": {
                 "external_api_providers_disabled_in_ui": True,
                 "external_image_adapters_disabled_in_ui": True,
@@ -253,6 +256,7 @@ def create_app() -> FastAPI:
         for p in providers:
             result.append({
                 "name": p["name"],
+                "display_name": _provider_display_name(p["name"]),
                 "status": p.get("status", "unknown"),
                 "version": p.get("version", ""),
                 "uses_external_api": p.get("uses_external_api", False),
@@ -270,6 +274,7 @@ def create_app() -> FastAPI:
         for a in adapters:
             result.append({
                 "name": a["name"],
+                "display_name": _image_adapter_display_name(a["name"]),
                 "status": a.get("status", "unknown"),
                 "version": a.get("version", ""),
                 "uses_external_api": a.get("uses_external_api", False),
@@ -287,7 +292,7 @@ def create_app() -> FastAPI:
         for s in styles:
             result.append({
                 "name": s["name"],
-                "display_name": s.get("display_name", s["name"]),
+                "display_name": _image_style_display_name(s["name"]),
                 "description": s.get("description", ""),
             })
         return JSONResponse(content=result)
@@ -314,6 +319,7 @@ def _get_provider_list() -> list[dict[str, Any]]:
             "uses_external_api": p.get("uses_external_api", False),
             "blocked_in_ui": p["name"] in BLOCKED_PROVIDERS,
             "label": _format_provider_label(p),
+            "display_name": _provider_display_name(p["name"]),
         })
     return result
 
@@ -328,24 +334,65 @@ def _get_image_adapter_list() -> list[dict[str, Any]]:
             "status": a.get("status", "unknown"),
             "uses_external_api": a.get("uses_external_api", False),
             "blocked_in_ui": a["name"] in BLOCKED_IMAGE_ADAPTERS,
+            "display_name": _image_adapter_display_name(a["name"]),
         })
     return result
 
 
-def _get_image_style_list() -> list[str]:
-    """Get image style names for template rendering."""
+def _get_image_style_list() -> list[dict[str, str]]:
+    """Get image style list for template rendering."""
     styles = list_styles()
-    return [s["name"] for s in styles]
+    result = []
+    for s in styles:
+        result.append({
+            "name": s["name"],
+            "display_name": _image_style_display_name(s["name"]),
+        })
+    return result
+
+
+# ── Chinese Display Name Helpers ───────────────────────────
+
+def _provider_display_name(name: str) -> str:
+    """Return Chinese display name for a provider."""
+    mapping = {
+        "rule-based": "规则拆解",
+        "mock-llm": "本地模拟 LLM",
+        "local-fixture": "本地协议测试",
+        "local-http": "本地 HTTP 模型",
+        "openai": "OpenAI 外部模型",
+    }
+    return mapping.get(name, name)
+
+
+def _image_adapter_display_name(name: str) -> str:
+    """Return Chinese display name for an image adapter."""
+    mapping = {
+        "placeholder": "本地 SVG 占位图",
+        "fixture": "本地 SVG Fixture",
+        "openai-image": "OpenAI 图片",
+    }
+    return mapping.get(name, name)
+
+
+def _image_style_display_name(name: str) -> str:
+    """Return Chinese display name for an image style."""
+    mapping = {
+        "clean-cartoon-explainer": "清爽卡通讲解",
+        "whiteboard": "白板图解",
+        "storybook": "绘本风",
+        "technical-diagram": "技术图示",
+    }
+    return mapping.get(name, name)
 
 
 def _format_provider_label(p: dict[str, Any]) -> str:
     """Format a provider label for display."""
     name = p["name"]
-    status = p.get("status", "unknown")
-    external = p.get("uses_external_api", False)
-    parts = [name]
-    if status == "experimental":
-        parts.append("[exp]")
-    if external:
-        parts.append("[ext API]")
+    display = _provider_display_name(name)
+    parts = [f"{display} {name}"]
+    if p.get("status") == "experimental":
+        parts.append("[实验性]")
+    if p.get("uses_external_api", False):
+        parts.append("[外部 API]")
     return " ".join(parts)

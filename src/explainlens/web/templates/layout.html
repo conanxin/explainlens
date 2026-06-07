@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ExplainLens{% endblock %} — Local Web UI</title>
+    <title>{% block title %}ExplainLens{% endblock %} — 本地 Web UI</title>
     <link rel="stylesheet" href="/static/app.css">
     {% block head %}{% endblock %}
 </head>
@@ -12,14 +12,14 @@
     <header class="topbar">
         <div class="topbar-left">
             <span class="logo">&#x25C9; ExplainLens</span>
-            <span class="tagline">Local-first Visual Explainer</span>
+            <span class="tagline">本地优先的论文图解工作台</span>
         </div>
         <div class="topbar-center">
-            <span class="status-indicator local" title="Local-first &mdash; no external APIs">&#x25CF; Local by default</span>
+            <span class="status-indicator local" title="本地优先 — 不调用外部 API">&#x25CF; 本地模式</span>
         </div>
         <div class="topbar-right">
-            <a href="/" class="topbar-link">Dashboard</a>
-            <a href="/api/health" class="topbar-link" target="_blank">Health</a>
+            <a href="/" class="topbar-link">仪表盘</a>
+            <a href="/api/health" class="topbar-link" target="_blank">健康</a>
         </div>
     </header>
 
@@ -28,23 +28,23 @@
         <!-- Left: Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-section">
-                <h3 class="sidebar-heading">Runs</h3>
+                <h3 class="sidebar-heading">历史任务</h3>
                 <div id="sidebar-runs" class="sidebar-runs-list">
                     {% block sidebar_runs %}{% endblock %}
                 </div>
             </div>
             <div class="sidebar-section">
-                <h3 class="sidebar-heading">System</h3>
+                <h3 class="sidebar-heading">系统</h3>
                 <ul class="sidebar-nav">
-                    <li><a href="/api/providers" target="_blank" class="sidebar-link">Providers</a></li>
-                    <li><a href="/api/image-adapters" target="_blank" class="sidebar-link">Image Adapters</a></li>
-                    <li><a href="/api/image-styles" target="_blank" class="sidebar-link">Image Styles</a></li>
-                    <li><a href="/api/doctor" target="_blank" class="sidebar-link">Doctor</a></li>
+                    <li><a href="/api/providers" target="_blank" class="sidebar-link">内容理解方式</a></li>
+                    <li><a href="/api/image-adapters" target="_blank" class="sidebar-link">图片生成方式</a></li>
+                    <li><a href="/api/image-styles" target="_blank" class="sidebar-link">图片风格</a></li>
+                    <li><a href="/api/doctor" target="_blank" class="sidebar-link">系统诊断</a></li>
                 </ul>
             </div>
             <div class="sidebar-section sidebar-safety">
-                <h3 class="sidebar-heading">Safety</h3>
-                <p class="safety-note">External API providers and image adapters are disabled in this UI. Use CLI for external API testing.</p>
+                <h3 class="sidebar-heading">安全边界</h3>
+                <p class="safety-note">外部 API Provider 与图片适配器在 Web UI 中默认禁用。如需外部 API 测试，请使用 CLI 并显式开启。</p>
             </div>
         </aside>
 

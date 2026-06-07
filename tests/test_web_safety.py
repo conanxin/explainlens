@@ -208,7 +208,7 @@ class TestHTMLSafety:
     def test_html_contains_local_by_default(self, client):
         """Top bar shows 'Local by default'."""
         resp = client.get("/")
-        assert "Local by default" in resp.text
+        assert "本地模式" in resp.text
 
     def test_html_contains_safety_warning(self, client):
         """Sidebar shows safety note about external APIs."""

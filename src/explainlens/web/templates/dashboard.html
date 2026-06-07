@@ -1,17 +1,17 @@
 {% extends "layout.html" %}
-{% block title %}ExplainLens Dashboard{% endblock %}
+{% block title %}ExplainLens 仪表盘{% endblock %}
 
 {% block sidebar_runs %}
 {% if runs %}
     {% for run in runs %}
-    <a href="/runs/{{ run.run_id }}" class="run-item {{ run.status }}">
+    <a href="/runs/{{ run.run_id }}" class="run-item {{ run.status }} {% if run.run_id == active_run_id %}active{% endif %}">
         <span class="run-status-dot {{ run.status }}"></span>
-        <span class="run-name">{{ run.run_id[:26] }}{% if run.run_id|length > 26 %}...{% endif %}</span>
+        <span class="run-name">{{ run.run_id[:18] }}{% if run.run_id|length > 18 %}...{% endif %}</span>
         <span class="run-meta">{{ run.provider }}</span>
     </a>
     {% endfor %}
 {% else %}
-    <p class="sidebar-empty">No runs yet. Start a new analysis.</p>
+    <p class="sidebar-empty">暂无任务。请新建一个分析任务。</p>
 {% endif %}
 {% endblock %}
 
@@ -19,57 +19,67 @@
 <div class="workspace-content">
     <!-- Page Header -->
     <div class="page-header">
-        <h1>New Analysis Run</h1>
-        <p class="page-subtitle">Select input, provider, and visual settings to create explainer cards.</p>
+        <h1>新建图解任务</h1>
+        <p class="page-subtitle">选择输入文件、理解方式和视觉设置，生成可溯源的图解卡片。</p>
     </div>
 
     <!-- New Run Form -->
     <form id="new-run-form" class="run-form">
+        <!-- Example Shortcut Buttons -->
         <div class="form-group">
-            <label for="input-path">Input File</label>
+            <label>快捷示例</label>
+            <div class="example-buttons">
+                <button type="button" class="btn btn-example" data-path="examples/sample_article.txt">使用示例文章</button>
+                <button type="button" class="btn btn-example" data-path="examples/sample_paper.pdf">使用示例 PDF</button>
+                <button type="button" class="btn btn-example" data-path="">清空</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="input-path">输入文件</label>
             <input
                 type="text"
                 id="input-path"
                 name="input"
-                placeholder="examples/sample_article.txt"
+                placeholder="选择 PDF、Markdown 或文本文件，生成可溯源的图解卡片"
                 value="examples/sample_article.txt"
                 required
             >
-            <span class="form-hint">Path to .txt, .md, or .pdf file (relative or absolute)</span>
+            <span class="form-hint">文件路径（相对或绝对路径），例如：examples/sample_article.txt</span>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="provider">Provider</label>
+                <label for="provider">内容理解方式</label>
                 <select id="provider" name="provider">
                     {% for p in providers %}
                     <option value="{{ p.name }}" {% if p.blocked_in_ui %}disabled class="external-option"{% endif %}>
-                        {{ p.label }}{% if p.blocked_in_ui %} [disabled in UI]{% endif %}
+                        {{ p.display_name }} {{ p.name }}{% if p.blocked_in_ui %}（Web UI 禁用）{% endif %}
                     </option>
                     {% endfor %}
                 </select>
                 {% for p in providers %}
                     {% if p.blocked_in_ui %}
                     <span class="form-warning" data-for="provider" data-value="{{ p.name }}">
-                        External API provider &mdash; disabled in this local UI. Use CLI with --allow-external-api.
+                        外部 API Provider — 在本地 UI 中已禁用。请使用 CLI 并添加 --allow-external-api 参数。
                     </span>
                     {% endif %}
                 {% endfor %}
             </div>
 
             <div class="form-group">
-                <label for="image-adapter">Image Adapter</label>
+                <label for="image-adapter">图片生成方式</label>
                 <select id="image-adapter" name="image_adapter">
                     {% for a in image_adapters %}
                     <option value="{{ a.name }}" {% if a.blocked_in_ui %}disabled class="external-option"{% endif %}>
-                        {{ a.name }}{% if a.blocked_in_ui %} [disabled in UI]{% endif %}
+                        {{ a.display_name }} {{ a.name }}{% if a.blocked_in_ui %}（Web UI 禁用）{% endif %}
                     </option>
                     {% endfor %}
                 </select>
                 {% for a in image_adapters %}
                     {% if a.blocked_in_ui %}
                     <span class="form-warning" data-for="image-adapter" data-value="{{ a.name }}">
-                        External image API &mdash; disabled in this local UI. Use CLI with --allow-external-images.
+                        外部图片 API — 在本地 UI 中已禁用。请使用 CLI 并添加 --allow-external-images 参数。
                     </span>
                     {% endif %}
                 {% endfor %}
@@ -78,10 +88,10 @@
 
         <div class="form-row">
             <div class="form-group">
-                <label for="image-style">Image Style</label>
+                <label for="image-style">图片风格</label>
                 <select id="image-style" name="image_style">
                     {% for style in image_styles %}
-                    <option value="{{ style }}">{{ style }}</option>
+                    <option value="{{ style.name }}">{{ style.display_name }} {{ style.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -89,14 +99,14 @@
             <div class="form-group form-checkbox">
                 <label>
                     <input type="checkbox" id="skip-images" name="skip_images">
-                    Skip image generation
+                    跳过图片生成
                 </label>
             </div>
         </div>
 
         <div class="form-actions">
             <button type="submit" id="start-run-btn" class="btn btn-primary">
-                Start Run
+                开始生成
             </button>
             <span id="form-status" class="form-status"></span>
         </div>
@@ -105,22 +115,40 @@
     <!-- Run Status Area -->
     <div id="run-status" class="run-status hidden">
         <div class="status-header">
-            <h3 id="status-title">Running...</h3>
-            <span id="status-badge" class="badge-running">running</span>
+            <h3 id="status-title">运行中...</h3>
+            <span id="status-badge" class="badge-running">运行中</span>
         </div>
         <pre id="status-log" class="status-log"></pre>
         <div id="status-error" class="status-error hidden"></div>
-        <a id="status-view-btn" class="btn btn-secondary hidden" href="#">View Results</a>
+        <a id="status-view-btn" class="btn btn-secondary hidden" href="#">查看结果</a>
     </div>
 </div>
 {% endblock %}
 
 {% block preview %}
-<div class="preview-placeholder">
+<div class="preview-placeholder" id="preview-placeholder">
     <div class="preview-icon">&#x25C9;</div>
-    <h3>Cards Preview</h3>
-    <p>Start a run to preview the generated explainer cards here.</p>
-    <p class="preview-hint">Select an input file and click <strong>Start Run</strong> in the workspace.</p>
+    <h3>卡片预览</h3>
+    <p>生成完成后，这里会显示：</p>
+    <ul class="preview-checklist">
+        <li>图解卡片 cards.html</li>
+        <li>图片预览</li>
+        <li>来源引用 Source Appendix</li>
+        <li>image_manifest.json</li>
+        <li>provider_manifest.json</li>
+        <li>运行日志 logs.txt</li>
+    </ul>
+    <div class="preview-skeleton">
+        <div class="skeleton-card">
+            <div class="skeleton-line long"></div>
+            <div class="skeleton-line medium"></div>
+            <div class="skeleton-line short"></div>
+            <div class="skeleton-block"></div>
+            <div class="skeleton-line medium"></div>
+            <div class="skeleton-line long"></div>
+        </div>
+    </div>
+    <p class="preview-hint">选择输入文件，然后点击工作区中的<strong>「开始生成」</strong>。</p>
 </div>
 {% endblock %}
 
@@ -136,8 +164,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusViewBtn = document.getElementById('status-view-btn');
     const formStatus = document.getElementById('form-status');
     const previewPane = document.getElementById('preview-pane');
+    const previewPlaceholder = document.getElementById('preview-placeholder');
     const providerSelect = document.getElementById('provider');
     const imageAdapterSelect = document.getElementById('image-adapter');
+
+    // Example shortcut buttons
+    document.querySelectorAll('.btn-example').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('input-path').value = btn.dataset.path;
+        });
+    });
 
     // Show/hide warnings based on selection
     function updateWarnings() {
@@ -167,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Disable button
         const btn = document.getElementById('start-run-btn');
         btn.disabled = true;
-        btn.textContent = 'Starting...';
+        btn.textContent = '正在启动...';
         formStatus.textContent = '';
 
         try {
@@ -186,19 +222,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await resp.json();
 
             if (!resp.ok) {
-                formStatus.textContent = 'Error: ' + (data.detail || 'Unknown error');
+                formStatus.textContent = '错误: ' + (data.detail || data.error || '未知错误');
                 formStatus.className = 'form-status error';
                 btn.disabled = false;
-                btn.textContent = 'Start Run';
+                btn.textContent = '开始生成';
                 return;
             }
 
             // Show status area
             statusArea.classList.remove('hidden');
-            statusTitle.textContent = 'Run: ' + data.run_id;
-            statusBadge.textContent = 'running';
+            statusTitle.textContent = '任务: ' + data.run_id;
+            statusBadge.textContent = '运行中';
             statusBadge.className = 'badge-running';
-            statusLog.textContent = 'Analysis started...\n';
+            statusLog.textContent = '分析已启动...\n';
             statusError.classList.add('hidden');
             statusViewBtn.classList.add('hidden');
 
@@ -207,10 +243,10 @@ document.addEventListener('DOMContentLoaded', function() {
             pollRunStatus(runId);
 
         } catch (err) {
-            formStatus.textContent = 'Error: ' + err.message;
+            formStatus.textContent = '错误: ' + err.message;
             formStatus.className = 'form-status error';
             btn.disabled = false;
-            btn.textContent = 'Start Run';
+            btn.textContent = '开始生成';
         }
     });
 
@@ -219,10 +255,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const resp = await fetch('/api/runs/' + runId);
             const data = await resp.json();
 
+            const statusMap = {
+                'success': '成功',
+                'running': '运行中',
+                'failed': '失败',
+                'pending': '等待中',
+                'blocked': '已阻止',
+                'unknown': '未知'
+            };
+
             if (data.status === 'running') {
-                statusBadge.textContent = 'running';
+                statusBadge.textContent = '运行中';
                 statusBadge.className = 'badge-running';
-                // Try to get logs
                 try {
                     const logResp = await fetch('/api/runs/' + runId + '/artifact/logs.txt');
                     if (logResp.ok) {
@@ -231,34 +275,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch(e) {}
                 setTimeout(function() { pollRunStatus(runId); }, 1000);
             } else if (data.status === 'success') {
-                statusBadge.textContent = 'success';
+                statusBadge.textContent = '成功';
                 statusBadge.className = 'badge-success';
-                statusTitle.textContent = 'Run Complete: ' + runId;
+                statusTitle.textContent = '任务完成: ' + runId;
                 statusViewBtn.href = '/runs/' + runId;
                 statusViewBtn.classList.remove('hidden');
                 document.getElementById('start-run-btn').disabled = false;
-                document.getElementById('start-run-btn').textContent = 'Start Run';
+                document.getElementById('start-run-btn').textContent = '开始生成';
 
-                // Load preview
-                try {
-                    previewPane.innerHTML = '<iframe src="/api/runs/' + runId + '/artifact/cards.html" class="preview-iframe"></iframe>';
-                } catch(e) {}
+                // Load preview iframe
+                if (previewPlaceholder) {
+                    previewPlaceholder.style.display = 'none';
+                }
+                previewPane.innerHTML = '<iframe src="/api/runs/' + runId + '/artifact/cards.html" class="preview-iframe"></iframe>';
 
                 // Refresh sidebar
                 location.reload();
             } else {
-                statusBadge.textContent = 'failed';
+                statusBadge.textContent = statusMap[data.status] || '失败';
                 statusBadge.className = 'badge-failed';
-                statusTitle.textContent = 'Run Failed: ' + runId;
+                statusTitle.textContent = '任务失败: ' + runId;
                 if (data.error) {
                     statusError.textContent = data.error;
                     statusError.classList.remove('hidden');
                 }
                 document.getElementById('start-run-btn').disabled = false;
-                document.getElementById('start-run-btn').textContent = 'Start Run';
+                document.getElementById('start-run-btn').textContent = '开始生成';
             }
         } catch (err) {
-            statusLog.textContent += '\n[Polling error: ' + err.message + ']';
+            statusLog.textContent += '\n[轮询错误: ' + err.message + ']';
             setTimeout(function() { pollRunStatus(runId); }, 2000);
         }
     }

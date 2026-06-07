@@ -637,6 +637,45 @@ def main() -> int:
                       "Web UI docs must mention 127.0.0.1 binding")
     print()
 
+
+    # --- Web UI Chinese Localization (Phase 5A-UI-polish) ---
+    print(">>> Web UI Chinese Localization (Phase 5A-UI-polish)")
+    all_pass &= check('dashboard 包含中文「新建图解任务」',
+                      file_contains('src/explainlens/web/templates/dashboard.html', r'新建图解任务'),
+                      'dashboard.html must contain Chinese new run title')
+    all_pass &= check('dashboard 包含中文「内容理解方式」',
+                      file_contains('src/explainlens/web/templates/dashboard.html', r'内容理解方式'),
+                      'dashboard.html must contain Chinese provider label')
+    all_pass &= check('dashboard 包含中文「图片生成方式」',
+                      file_contains('src/explainlens/web/templates/dashboard.html', r'图片生成方式'),
+                      'dashboard.html must contain Chinese image adapter label')
+    all_pass &= check('dashboard 包含中文「本地优先」',
+                      file_contains('src/explainlens/web/templates/layout.html', r'本地优先'),
+                      'layout.html must contain Chinese tagline')
+    all_pass &= check('dashboard 包含 Source Appendix',
+                      file_contains('src/explainlens/web/templates/dashboard.html', r'Source Appendix'),
+                      'dashboard.html must mention Source Appendix in empty state')
+    all_pass &= check('dashboard 包含「使用示例文章」按钮',
+                      file_contains('src/explainlens/web/templates/dashboard.html', r'使用示例文章'),
+                      'dashboard.html must have example article button')
+    all_pass &= check('dashboard 包含「使用示例 PDF」按钮',
+                      file_contains('src/explainlens/web/templates/dashboard.html', r'使用示例 PDF'),
+                      'dashboard.html must have example PDF button')
+    all_pass &= check('dashboard 包含「安全边界」',
+                      file_contains('src/explainlens/web/templates/layout.html', r'安全边界'),
+                      'layout.html must contain Chinese safety heading')
+    all_pass &= check('templates 不包含 API key',
+                      not file_contains('src/explainlens/web/templates/dashboard.html', r'sk-[a-zA-Z0-9]{20,}') and
+                      not file_contains('src/explainlens/web/templates/run_detail.html', r'sk-[a-zA-Z0-9]{20,}'),
+                      'Templates must not contain API keys')
+    all_pass &= check('openai 仍被 UI 拦截',
+                      file_contains('src/explainlens/web/app.py', r'BLOCKED_PROVIDERS.*openai'),
+                      'app.py must still block openai provider')
+    all_pass &= check('openai-image 仍被 UI 拦截',
+                      file_contains('src/explainlens/web/app.py', r'BLOCKED_IMAGE_ADAPTERS.*openai-image'),
+                      'app.py must still block openai-image adapter')
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

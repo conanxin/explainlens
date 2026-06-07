@@ -54,7 +54,7 @@ class TestWebApp:
         resp = client.get("/")
         html = resp.text
         assert "new-run-form" in html
-        assert "Start Run" in html
+        assert "开始生成" in html
 
     def test_api_health(self, client):
         """Health check returns OK."""
@@ -329,7 +329,7 @@ class TestUILayout:
     def test_dashboard_has_new_run_button(self, client):
         """Dashboard has Start Run button."""
         resp = client.get("/")
-        assert "Start Run" in resp.text
+        assert "开始生成" in resp.text
 
     def test_dashboard_has_provider_dropdown(self, client):
         """Dashboard has provider select dropdown."""

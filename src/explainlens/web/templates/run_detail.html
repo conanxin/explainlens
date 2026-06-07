@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
-{% block title %}Run {{ run_id }}{% endblock %}
+{% block title %}任务 {{ run_id }}{% endblock %}
 
 {% block sidebar_runs %}
 {# Quick back link at top #}
-<a href="/" class="run-item back-link">&larr; Back to Dashboard</a>
+<a href="/" class="run-item back-link">&larr; 返回仪表盘</a>
 {% endblock %}
 
 {% block workspace %}
@@ -11,42 +11,51 @@
     <!-- Run Header -->
     <div class="page-header">
         <div class="run-header-top">
-            <h1>Run: {{ run_id[:28] }}{% if run_id|length > 28 %}...{% endif %}</h1>
-            <span class="badge-{{ run.status }}">{{ run.status }}</span>
+            <h1>任务: {{ run_id[:28] }}{% if run_id|length > 28 %}...{% endif %}</h1>
+            {% set status_text_map = {
+                'success': '成功',
+                'running': '运行中',
+                'failed': '失败',
+                'pending': '等待中',
+                'blocked': '已阻止',
+                'unknown': '未知'
+            } %}
+            {% set status_text = status_text_map.get(run.status, '未知') %}
+            <span class="badge-{{ run.status }}">{{ status_text }}</span>
         </div>
     </div>
 
     <!-- Run Metadata -->
     <div class="run-meta-grid">
         <div class="meta-item">
-            <span class="meta-label">Input</span>
+            <span class="meta-label">输入文件</span>
             <span class="meta-value">{{ run.input }}</span>
         </div>
         <div class="meta-item">
-            <span class="meta-label">Provider</span>
+            <span class="meta-label">内容理解方式</span>
             <span class="meta-value">{{ run.provider }}</span>
         </div>
         <div class="meta-item">
-            <span class="meta-label">Image Adapter</span>
-            <span class="meta-value">{{ run.image_adapter or 'none' }}</span>
+            <span class="meta-label">图片生成方式</span>
+            <span class="meta-value">{{ run.image_adapter or '无' }}</span>
         </div>
         <div class="meta-item">
-            <span class="meta-label">Image Style</span>
-            <span class="meta-value">{{ run.image_style or 'none' }}</span>
+            <span class="meta-label">图片风格</span>
+            <span class="meta-value">{{ run.image_style or '无' }}</span>
         </div>
         <div class="meta-item">
-            <span class="meta-label">Created</span>
+            <span class="meta-label">创建时间</span>
             <span class="meta-value">{{ run.created_at[:19] if run.created_at else '—' }}</span>
         </div>
         {% if run.completed_at %}
         <div class="meta-item">
-            <span class="meta-label">Completed</span>
+            <span class="meta-label">完成时间</span>
             <span class="meta-value">{{ run.completed_at[:19] }}</span>
         </div>
         {% endif %}
         {% if run.error %}
         <div class="meta-item meta-error">
-            <span class="meta-label">Error</span>
+            <span class="meta-label">错误</span>
             <span class="meta-value">{{ run.error }}</span>
         </div>
         {% endif %}
@@ -54,13 +63,13 @@
 
     <!-- Artifacts List -->
     <div class="section">
-        <h3>Artifacts</h3>
+        <h3>输出文件</h3>
         <ul class="artifact-list">
             {% for a in artifacts %}
             <li class="artifact-item" data-name="{{ a.name }}">
                 <span class="artifact-name">{{ a.name }}</span>
                 <span class="artifact-size">{{ a.size_human }}</span>
-                <a href="/api/runs/{{ run_id }}/artifact/{{ a.name }}" class="artifact-view" target="_blank">View</a>
+                <a href="/api/runs/{{ run_id }}/artifact/{{ a.name }}" class="artifact-view" target="_blank">查看</a>
             </li>
             {% endfor %}
         </ul>
@@ -75,8 +84,8 @@
     {% endfor %}
     {% if has_logs.found %}
     <div class="section">
-        <h3>Logs</h3>
-        <pre id="run-logs" class="log-viewer">Loading logs...</pre>
+        <h3>运行日志</h3>
+        <pre id="run-logs" class="log-viewer">正在加载日志...</pre>
     </div>
     {% endif %}
 </div>
@@ -84,12 +93,12 @@
 
 {% block preview %}
 <div class="preview-tabs" id="preview-tabs">
-    <button class="preview-tab active" data-tab="cards">Preview</button>
-    <button class="preview-tab" data-tab="artifacts">Artifacts</button>
-    <button class="preview-tab" data-tab="images">Images</button>
-    <button class="preview-tab" data-tab="manifests">Manifests</button>
-    <button class="preview-tab" data-tab="sources">Sources</button>
-    <button class="preview-tab" data-tab="logs">Logs</button>
+    <button class="preview-tab active" data-tab="cards">预览</button>
+    <button class="preview-tab" data-tab="artifacts">输出文件</button>
+    <button class="preview-tab" data-tab="images">图片</button>
+    <button class="preview-tab" data-tab="manifests">清单</button>
+    <button class="preview-tab" data-tab="sources">来源</button>
+    <button class="preview-tab" data-tab="logs">日志</button>
 </div>
 
 <div id="preview-content" class="preview-content">
@@ -97,32 +106,32 @@
         <iframe src="/api/runs/{{ run_id }}/artifact/cards.html" class="preview-iframe" id="cards-iframe"></iframe>
     </div>
     <div id="tab-artifacts" class="tab-panel">
-        <pre id="artifact-viewer" class="json-viewer">Select an artifact to view.</pre>
+        <pre id="artifact-viewer" class="json-viewer">请选择一个输出文件查看。</pre>
     </div>
     <div id="tab-images" class="tab-panel">
-        <p class="preview-hint">Images from the run will appear here.</p>
+        <p class="preview-hint">任务生成的图片将显示在这里。</p>
         <div id="images-list" class="images-grid"></div>
     </div>
     <div id="tab-manifests" class="tab-panel">
         <div class="manifest-section">
-            <h4>Provider Manifest</h4>
-            <pre id="manifest-provider" class="json-viewer">Loading...</pre>
+            <h4>Provider 清单</h4>
+            <pre id="manifest-provider" class="json-viewer">正在加载...</pre>
         </div>
         <div class="manifest-section">
-            <h4>Image Manifest</h4>
-            <pre id="manifest-image" class="json-viewer">Loading...</pre>
+            <h4>图片清单</h4>
+            <pre id="manifest-image" class="json-viewer">正在加载...</pre>
         </div>
         <div class="manifest-section">
-            <h4>Run Summary</h4>
-            <pre id="manifest-summary" class="json-viewer">Loading...</pre>
+            <h4>任务摘要</h4>
+            <pre id="manifest-summary" class="json-viewer">正在加载...</pre>
         </div>
     </div>
     <div id="tab-sources" class="tab-panel">
-        <h4>Source Index</h4>
-        <pre id="source-index-viewer" class="json-viewer">Loading...</pre>
+        <h4>来源索引</h4>
+        <pre id="source-index-viewer" class="json-viewer">正在加载...</pre>
     </div>
     <div id="tab-logs" class="tab-panel">
-        <pre id="logs-viewer" class="log-viewer">Loading...</pre>
+        <pre id="logs-viewer" class="log-viewer">正在加载...</pre>
     </div>
 </div>
 {% endblock %}
@@ -131,6 +140,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const runId = '{{ run_id }}';
+    const statusTextMap = {
+        'success': '成功',
+        'running': '运行中',
+        'failed': '失败',
+        'pending': '等待中',
+        'blocked': '已阻止',
+        'unknown': '未知'
+    };
 
     // Tab switching
     const tabs = document.querySelectorAll('#preview-tabs .preview-tab');
@@ -168,42 +185,42 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             var r1 = await fetch('/api/runs/' + runId + '/artifact/provider_manifest.json');
             if (r1.ok) document.getElementById('manifest-provider').textContent = await r1.text();
-            else document.getElementById('manifest-provider').textContent = 'Not found';
-        } catch(e) { document.getElementById('manifest-provider').textContent = 'Error loading'; }
+            else document.getElementById('manifest-provider').textContent = '未找到';
+        } catch(e) { document.getElementById('manifest-provider').textContent = '加载失败'; }
 
         try {
             var r2 = await fetch('/api/runs/' + runId + '/artifact/image_manifest.json');
             if (r2.ok) document.getElementById('manifest-image').textContent = await r2.text();
-            else document.getElementById('manifest-image').textContent = 'Not found';
-        } catch(e) { document.getElementById('manifest-image').textContent = 'Error loading'; }
+            else document.getElementById('manifest-image').textContent = '未找到';
+        } catch(e) { document.getElementById('manifest-image').textContent = '加载失败'; }
 
         try {
             var r3 = await fetch('/api/runs/' + runId + '/artifact/run_summary.json');
             if (r3.ok) document.getElementById('manifest-summary').textContent = await r3.text();
-            else document.getElementById('manifest-summary').textContent = 'Not found';
-        } catch(e) { document.getElementById('manifest-summary').textContent = 'Error loading'; }
+            else document.getElementById('manifest-summary').textContent = '未找到';
+        } catch(e) { document.getElementById('manifest-summary').textContent = '加载失败'; }
     }
 
     async function loadSourceIndex() {
         try {
             var r = await fetch('/api/runs/' + runId + '/artifact/source_index.json');
             if (r.ok) document.getElementById('source-index-viewer').textContent = await r.text();
-            else document.getElementById('source-index-viewer').textContent = 'Not found';
-        } catch(e) { document.getElementById('source-index-viewer').textContent = 'Error loading'; }
+            else document.getElementById('source-index-viewer').textContent = '未找到';
+        } catch(e) { document.getElementById('source-index-viewer').textContent = '加载失败'; }
     }
 
     async function loadLogs() {
         try {
             var r = await fetch('/api/runs/' + runId + '/artifact/logs.txt');
             if (r.ok) document.getElementById('logs-viewer').textContent = await r.text();
-            else document.getElementById('logs-viewer').textContent = 'No logs found';
-        } catch(e) { document.getElementById('logs-viewer').textContent = 'Error loading'; }
+            else document.getElementById('logs-viewer').textContent = '未找到日志';
+        } catch(e) { document.getElementById('logs-viewer').textContent = '加载失败'; }
     }
 
     async function loadImages() {
         try {
             var r = await fetch('/api/runs/' + runId + '/artifact/image_manifest.json');
-            if (!r.ok) { document.getElementById('images-list').innerHTML = '<p>No images found.</p>'; return; }
+            if (!r.ok) { document.getElementById('images-list').innerHTML = '<p>未找到图片。</p>'; return; }
             var manifest = await r.json();
             var images = manifest.images || manifest.records || [];
             var html = '';
@@ -211,12 +228,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 var path = img.path || img.file || '';
                 var name = path.split('/').pop();
                 if (name) {
-                    html += '<div class="image-card"><img src="/api/runs/' + runId + '/artifact/images/' + name + '" alt="' + (img.title || '') + '" onerror="this.parentElement.innerHTML=\'<p>Image not found: ' + name + '</p>\'"><span>' + (img.title || name) + '</span></div>';
+                    html += '<div class="image-card"><img src="/api/runs/' + runId + '/artifact/images/' + name + '" alt="' + (img.title || '') + '" onerror="this.parentElement.innerHTML=\'<p>未找到图片: ' + name + '</p>\'"><span>' + (img.title || name) + '</span></div>';
                 }
             });
-            document.getElementById('images-list').innerHTML = html || '<p>No images found.</p>';
+            document.getElementById('images-list').innerHTML = html || '<p>未找到图片。</p>';
         } catch(e) {
-            document.getElementById('images-list').innerHTML = '<p>Error loading images.</p>';
+            document.getElementById('images-list').innerHTML = '<p>加载图片失败。</p>';
         }
     }
 
@@ -226,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/runs/' + runId + '/artifact/logs.txt')
             .then(function(r) { return r.text(); })
             .then(function(text) { logEl.textContent = text; })
-            .catch(function() { logEl.textContent = 'No logs available.'; });
+            .catch(function() { logEl.textContent = '无法加载日志。'; });
     }
 });
 </script>
