@@ -4,7 +4,7 @@
 {% block sidebar_runs %}
 {% if runs %}
     {% for run in runs %}
-    <a href="/runs/{{ run.run_id }}" class="run-item {{ run.status }} {% if run.run_id == active_run_id %}active{% endif %}">
+    <a href="#" class="run-item {{ run.status }}" data-run-id="{{ run.run_id }}">
         <span class="run-status-dot {{ run.status }}"></span>
         <span class="run-name">{{ run.run_id[:18] }}{% if run.run_id|length > 18 %}...{% endif %}</span>
         <span class="run-meta">{{ run.provider }}</span>
@@ -150,11 +150,48 @@
     </div>
     <p class="preview-hint">选择输入文件，然后点击工作区中的<strong>「开始生成」</strong>。</p>
 </div>
+
+<!-- Preview content container (hidden until a run is viewed) -->
+<div id="preview-content-container" class="hidden">
+    <!-- Success: iframe -->
+    <iframe id="preview-iframe" class="preview-iframe" src="about:blank"></iframe>
+    <!-- Loading state -->
+    <div id="preview-loading" class="preview-loading hidden">
+        <div class="preview-icon pulse">&#x25C9;</div>
+        <h3>正在生成...</h3>
+        <p id="preview-loading-run-id"></p>
+    </div>
+    <!-- Error state -->
+    <div id="preview-error" class="preview-error hidden">
+        <div class="preview-icon error-icon">&#x2716;</div>
+        <h3>运行失败</h3>
+        <pre id="preview-error-text"></pre>
+        <a id="preview-error-logs" class="btn btn-secondary" href="#" target="_blank">查看日志</a>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+/**
+ * ExplainLens Dashboard — Preview State Management
+ *
+ * Maintains stable preview pane across runs using appState.
+ * No page reload — sidebar refreshed via AJAX.
+ */
+(function() {
+    'use strict';
+
+    // ── Global State ────────────────────────────────────────
+
+    const appState = {
+        currentRunId: null,
+        currentRunStatus: null,
+        previewLocked: false
+    };
+
+    // ── DOM References ───────────────────────────────────────
+
     const form = document.getElementById('new-run-form');
     const statusArea = document.getElementById('run-status');
     const statusTitle = document.getElementById('status-title');
@@ -165,31 +202,195 @@ document.addEventListener('DOMContentLoaded', function() {
     const formStatus = document.getElementById('form-status');
     const previewPane = document.getElementById('preview-pane');
     const previewPlaceholder = document.getElementById('preview-placeholder');
+    const previewContentContainer = document.getElementById('preview-content-container');
+    const previewIframe = document.getElementById('preview-iframe');
+    const previewLoading = document.getElementById('preview-loading');
+    const previewError = document.getElementById('preview-error');
+    const previewErrorText = document.getElementById('preview-error-text');
+    const previewErrorLogs = document.getElementById('preview-error-logs');
+    const previewLoadingRunId = document.getElementById('preview-loading-run-id');
     const providerSelect = document.getElementById('provider');
     const imageAdapterSelect = document.getElementById('image-adapter');
+    const sidebarRuns = document.getElementById('sidebar-runs');
+    const startBtn = document.getElementById('start-run-btn');
 
-    // Example shortcut buttons
+    // ── Preview State Helpers ────────────────────────────────
+
+    function showPreviewEmpty() {
+        previewPlaceholder.classList.remove('hidden');
+        previewContentContainer.classList.add('hidden');
+    }
+
+    function showPreviewLoading(runId) {
+        previewPlaceholder.classList.add('hidden');
+        previewContentContainer.classList.remove('hidden');
+        previewIframe.classList.add('hidden');
+        previewLoading.classList.remove('hidden');
+        previewError.classList.add('hidden');
+        previewLoadingRunId.textContent = runId;
+    }
+
+    function showPreviewSuccess(runId) {
+        previewPlaceholder.classList.add('hidden');
+        previewContentContainer.classList.remove('hidden');
+        previewIframe.classList.remove('hidden');
+        previewLoading.classList.add('hidden');
+        previewError.classList.add('hidden');
+        previewIframe.src = '/api/runs/' + runId + '/artifact/cards.html';
+    }
+
+    function showPreviewFailed(runId, errorMessage) {
+        previewPlaceholder.classList.add('hidden');
+        previewContentContainer.classList.remove('hidden');
+        previewIframe.classList.add('hidden');
+        previewLoading.classList.add('hidden');
+        previewError.classList.remove('hidden');
+        previewErrorText.textContent = errorMessage || '未知错误';
+        previewErrorLogs.href = '/api/runs/' + runId + '/artifact/logs.txt';
+    }
+
+    // ── Sidebar Refresh (AJAX) ───────────────────────────────
+
+    async function refreshSidebarRuns() {
+        try {
+            const resp = await fetch('/api/runs');
+            const runs = await resp.json();
+            const statusMap = {
+                'success': '成功',
+                'running': '运行中',
+                'failed': '失败',
+                'pending': '等待中',
+                'blocked': '已阻止',
+                'unknown': '未知'
+            };
+
+            if (!runs || runs.length === 0) {
+                sidebarRuns.innerHTML = '<p class="sidebar-empty">暂无任务。请新建一个分析任务。</p>';
+                return;
+            }
+
+            let html = '';
+            runs.forEach(function(run) {
+                const shortId = run.run_id.length > 18 ? run.run_id.substring(0, 18) + '...' : run.run_id;
+                const isActive = run.run_id === appState.currentRunId;
+                html += '<a href="#" class="run-item ' + run.status + (isActive ? ' active' : '') + '" data-run-id="' + run.run_id + '">' +
+                    '<span class="run-status-dot ' + run.status + '"></span>' +
+                    '<span class="run-name">' + shortId + '</span>' +
+                    '<span class="run-meta">' + (run.provider || '') + '</span>' +
+                    '</a>';
+            });
+
+            sidebarRuns.innerHTML = html;
+
+            // Attach click handlers to new sidebar items
+            sidebarRuns.querySelectorAll('.run-item[data-run-id]').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const runId = item.dataset.runId;
+                    loadRunPreview(runId);
+                });
+            });
+        } catch (err) {
+            // Silently fail — sidebar refresh is best-effort
+        }
+    }
+
+    // ── Load Run Preview ─────────────────────────────────────
+
+    async function loadRunPreview(runId) {
+        appState.currentRunId = runId;
+        appState.previewLocked = true;
+        showPreviewLoading(runId);
+
+        try {
+            const resp = await fetch('/api/runs/' + runId);
+            const data = await resp.json();
+
+            appState.currentRunStatus = data.status;
+
+            if (data.status === 'success') {
+                showPreviewSuccess(runId);
+            } else if (data.status === 'running' || data.status === 'pending') {
+                // Keep loading state, start polling
+                showPreviewLoading(runId);
+                pollForPreview(runId);
+            } else if (data.status === 'failed' || data.status === 'blocked') {
+                const errMsg = data.error || ('任务状态: ' + data.status);
+                showPreviewFailed(runId, errMsg);
+            } else {
+                showPreviewFailed(runId, '未知状态: ' + data.status);
+            }
+        } catch (err) {
+            showPreviewFailed(runId, '加载失败: ' + err.message);
+        }
+
+        // Highlight sidebar
+        refreshSidebarRuns();
+    }
+
+    async function pollForPreview(runId) {
+        // Only continue polling if this run is still the current one
+        if (appState.currentRunId !== runId) return;
+
+        try {
+            const resp = await fetch('/api/runs/' + runId);
+            const data = await resp.json();
+
+            if (appState.currentRunId !== runId) return; // State changed during fetch
+
+            if (data.status === 'success') {
+                appState.currentRunStatus = 'success';
+                showPreviewSuccess(runId);
+                refreshSidebarRuns();
+            } else if (data.status === 'failed' || data.status === 'blocked') {
+                appState.currentRunStatus = data.status;
+                showPreviewFailed(runId, data.error || '任务状态: ' + data.status);
+                refreshSidebarRuns();
+            } else {
+                // Still running — poll again
+                setTimeout(function() { pollForPreview(runId); }, 1000);
+            }
+        } catch (err) {
+            // Retry on network error
+            if (appState.currentRunId === runId) {
+                setTimeout(function() { pollForPreview(runId); }, 2000);
+            }
+        }
+    }
+
+    // ── Example Shortcut Buttons ─────────────────────────────
+
     document.querySelectorAll('.btn-example').forEach(function(btn) {
         btn.addEventListener('click', function() {
             document.getElementById('input-path').value = btn.dataset.path;
         });
     });
 
-    // Show/hide warnings based on selection
-    function updateWarnings() {
-        const pWarnings = document.querySelectorAll('.form-warning[data-for="provider"]');
-        const aWarnings = document.querySelectorAll('.form-warning[data-for="image-adapter"]');
+    // ── Warning Visibility ───────────────────────────────────
 
-        pWarnings.forEach(function(w) {
+    function updateWarnings() {
+        document.querySelectorAll('.form-warning[data-for="provider"]').forEach(function(w) {
             w.style.display = w.dataset.value === providerSelect.value ? 'block' : 'none';
         });
-        aWarnings.forEach(function(w) {
+        document.querySelectorAll('.form-warning[data-for="image-adapter"]').forEach(function(w) {
             w.style.display = w.dataset.value === imageAdapterSelect.value ? 'block' : 'none';
         });
     }
 
     providerSelect.addEventListener('change', updateWarnings);
     imageAdapterSelect.addEventListener('change', updateWarnings);
+
+    // ── Sidebar Click (initial page load items) ──────────────
+
+    sidebarRuns.querySelectorAll('.run-item[data-run-id]').forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const runId = item.dataset.runId;
+            loadRunPreview(runId);
+        });
+    });
+
+    // ── Form Submit ──────────────────────────────────────────
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -201,9 +402,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const skipImages = document.getElementById('skip-images').checked;
 
         // Disable button
-        const btn = document.getElementById('start-run-btn');
-        btn.disabled = true;
-        btn.textContent = '正在启动...';
+        startBtn.disabled = true;
+        startBtn.textContent = '正在启动...';
         formStatus.textContent = '';
 
         try {
@@ -224,36 +424,52 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!resp.ok) {
                 formStatus.textContent = '错误: ' + (data.detail || data.error || '未知错误');
                 formStatus.className = 'form-status error';
-                btn.disabled = false;
-                btn.textContent = '开始生成';
+                startBtn.disabled = false;
+                startBtn.textContent = '开始生成';
                 return;
             }
 
-            // Show status area
+            // Set current run and lock preview
+            const runId = data.run_id;
+            appState.currentRunId = runId;
+            appState.currentRunStatus = 'running';
+            appState.previewLocked = true;
+
+            // Show preview loading immediately
+            showPreviewLoading(runId);
+
+            // Show status area in workspace
             statusArea.classList.remove('hidden');
-            statusTitle.textContent = '任务: ' + data.run_id;
+            statusTitle.textContent = '任务: ' + runId;
             statusBadge.textContent = '运行中';
             statusBadge.className = 'badge-running';
             statusLog.textContent = '分析已启动...\n';
             statusError.classList.add('hidden');
             statusViewBtn.classList.add('hidden');
 
-            // Poll for status
-            const runId = data.run_id;
+            // Refresh sidebar and start polling
+            refreshSidebarRuns();
             pollRunStatus(runId);
 
         } catch (err) {
             formStatus.textContent = '错误: ' + err.message;
             formStatus.className = 'form-status error';
-            btn.disabled = false;
-            btn.textContent = '开始生成';
+            startBtn.disabled = false;
+            startBtn.textContent = '开始生成';
         }
     });
 
+    // ── Poll Run Status (workspace log area) ─────────────────
+
     async function pollRunStatus(runId) {
+        // Don't poll if this is no longer the active run
+        if (appState.currentRunId !== runId) return;
+
         try {
             const resp = await fetch('/api/runs/' + runId);
             const data = await resp.json();
+
+            if (appState.currentRunId !== runId) return;
 
             const statusMap = {
                 'success': '成功',
@@ -275,23 +491,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch(e) {}
                 setTimeout(function() { pollRunStatus(runId); }, 1000);
             } else if (data.status === 'success') {
+                appState.currentRunStatus = 'success';
                 statusBadge.textContent = '成功';
                 statusBadge.className = 'badge-success';
                 statusTitle.textContent = '任务完成: ' + runId;
                 statusViewBtn.href = '/runs/' + runId;
                 statusViewBtn.classList.remove('hidden');
-                document.getElementById('start-run-btn').disabled = false;
-                document.getElementById('start-run-btn').textContent = '开始生成';
+                startBtn.disabled = false;
+                startBtn.textContent = '开始生成';
 
-                // Load preview iframe
-                if (previewPlaceholder) {
-                    previewPlaceholder.style.display = 'none';
-                }
-                previewPane.innerHTML = '<iframe src="/api/runs/' + runId + '/artifact/cards.html" class="preview-iframe"></iframe>';
+                // Show preview — no page reload!
+                showPreviewSuccess(runId);
 
-                // Refresh sidebar
-                location.reload();
+                // Refresh sidebar (AJAX, not reload)
+                refreshSidebarRuns();
             } else {
+                appState.currentRunStatus = data.status;
                 statusBadge.textContent = statusMap[data.status] || '失败';
                 statusBadge.className = 'badge-failed';
                 statusTitle.textContent = '任务失败: ' + runId;
@@ -299,14 +514,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusError.textContent = data.error;
                     statusError.classList.remove('hidden');
                 }
-                document.getElementById('start-run-btn').disabled = false;
-                document.getElementById('start-run-btn').textContent = '开始生成';
+                startBtn.disabled = false;
+                startBtn.textContent = '开始生成';
+
+                // Show error in preview
+                showPreviewFailed(runId, data.error || '任务状态: ' + data.status);
+
+                // Refresh sidebar
+                refreshSidebarRuns();
             }
         } catch (err) {
             statusLog.textContent += '\n[轮询错误: ' + err.message + ']';
-            setTimeout(function() { pollRunStatus(runId); }, 2000);
+            if (appState.currentRunId === runId) {
+                setTimeout(function() { pollRunStatus(runId); }, 2000);
+            }
         }
     }
-});
+
+})();
 </script>
 {% endblock %}
