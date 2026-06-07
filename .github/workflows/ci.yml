@@ -200,20 +200,23 @@ jobs:
 
       - name: Smoke test openai-image adapter (fail-closed -- no flag)
         run: |
-          ! python -m explainlens.cli analyze \
+          python -m explainlens.cli analyze \
             --input examples/sample_article.txt \
             --output outputs/ci_openai_image_closed \
-            --image-adapter openai-image
-          test ! -d outputs/ci_openai_image_closed
+            --image-adapter openai-image 2>&1 | tee ci_openai_image_closed.log
+          grep -q "fail-closed" ci_openai_image_closed.log
+          grep -q "OpenAI Images API is fail-closed" ci_openai_image_closed.log
+          rm -f ci_openai_image_closed.log
 
       - name: Smoke test openai-image adapter (fail-closed -- no key)
         run: |
-          OPENAI_API_KEY="" ! python -m explainlens.cli analyze \
+          OPENAI_API_KEY="" python -m explainlens.cli analyze \
             --input examples/sample_article.txt \
             --output outputs/ci_openai_image_nokey \
             --image-adapter openai-image \
-            --allow-external-images
-          test ! -d outputs/ci_openai_image_nokey
+            --allow-external-images 2>&1 | tee ci_openai_image_nokey.log
+          grep -q "OPENAI_API_KEY is not set" ci_openai_image_nokey.log
+          rm -f ci_openai_image_nokey.log
 
       - name: Smoke test image adapter (skip)
         run: |
