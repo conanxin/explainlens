@@ -48,6 +48,12 @@ node_modules/
 # Test cache
 .pytest_cache/
 
+# Run outputs (local web UI runs)
+runs/
+
+# Uploads (local web UI uploads)
+uploads/
+
 # Temporary
 *.tmp
 *.bak

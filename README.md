@@ -9,11 +9,11 @@
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)]()
 [![CI](https://github.com/conanxin/explainlens/actions/workflows/ci.yml/badge.svg)](https://github.com/conanxin/explainlens/actions/workflows/ci.yml)
 
-> **当前开发目标**: v0.2.0-alpha (Local-first provider MVP)。
+> **当前版本**: v0.3.0-alpha (development)
 > **重要说明**：默认**不调用外部 AI API**，**不生成真实图片**。
 > 系统使用启发式规则提取概念、生成 SVG 占位图和 image prompts。
 > OpenAI provider 为 experimental 状态，需显式 opt-in（`--allow-external-api` + `OPENAI_API_KEY`）。
-> 详见 [v0.2.0-alpha Release Notes](docs/releases/v0.2.0-alpha.md) 和 [v0.1.0-alpha Release Notes](docs/releases/v0.1.0-alpha.md)。
+> 详见 [v0.3.0-alpha Release Notes](docs/releases/v0.3.0-alpha.md)。
 
 ---
 
@@ -63,11 +63,23 @@ See [docs/DEMO.md](docs/DEMO.md).
 
 ## Local Web UI
 
+ExplainLens includes a local Web UI (Codex-style 3-column dashboard) for interactive use without CLI commands.
+
+### Start the Web UI
+
 ```bash
 python -m explainlens.web --host 127.0.0.1 --port 8765
 ```
 
-Then open http://127.0.0.1:8765.
+Then open http://127.0.0.1:8765 in your browser.
+
+### Web UI Features
+
+- **Left sidebar**: Run history with status indicators
+- **Center**: New run form (input path, provider, image adapter, style)
+- **Right**: Live preview pane (cards.html with images)
+- **Safety**: openai/openai-image blocked by default
+- **Chinese UI**: Full Chinese localization
 
 See [docs/WEB_UI.md](docs/WEB_UI.md) for full documentation.
 
