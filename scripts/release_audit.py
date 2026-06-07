@@ -566,6 +566,37 @@ def main() -> int:
                       "SECURITY must mention local SVG renderers")
     print()
 
+    # --- OpenAI Image Adapter (Phase 4C) ---
+    print(">>> OpenAI Image Adapter (Phase 4C)")
+    all_pass &= check("src/explainlens/images/openai_image_transport.py exists",
+                      file_exists("src/explainlens/images/openai_image_transport.py"),
+                      "OpenAI image transport must exist")
+    all_pass &= check("src/explainlens/images/openai_image.py exists",
+                      file_exists("src/explainlens/images/openai_image.py"),
+                      "OpenAI image adapter must exist")
+    all_pass &= check("openai-image in AVAILABLE_IMAGE_ADAPTERS",
+                      file_contains("src/explainlens/images/registry.py", r"openai-image"),
+                      "openai-image must be registered")
+    all_pass &= check("CLI --allow-external-images flag exists",
+                      file_contains("src/explainlens/cli.py", r"--allow-external-images"),
+                      "CLI must have --allow-external-images flag")
+    all_pass &= check("SECURITY.md mentions openai-image",
+                      file_contains("docs/SECURITY.md", r"openai-image"),
+                      "SECURITY must mention openai-image")
+    all_pass &= check("No API key in openai_image_transport.py",
+                      not file_contains("src/explainlens/images/openai_image_transport.py", r"sk-[a-zA-Z0-9_-]{20,}"),
+                      "No API key in openai_image_transport.py")
+    all_pass &= check("No API key in openai_image.py",
+                      not file_contains("src/explainlens/images/openai_image.py", r"sk-[a-zA-Z0-9_-]{20,}"),
+                      "No API key in openai_image.py")
+    all_pass &= check("CI has openai-image fail-closed check",
+                      file_contains(".github/workflows/ci.yml", r"openai-image"),
+                      "CI must check openai-image fail-closed")
+    all_pass &= check("README mentions openai-image adapter",
+                      file_contains("README.md", r"openai-image"),
+                      "README must mention openai-image")
+    print()
+
     # --- CI ---
     print(">>> CI")
     all_pass &= check(".github/workflows/ci.yml exists",

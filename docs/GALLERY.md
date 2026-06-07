@@ -3,7 +3,8 @@
 This document shows how ExplainLens visual exports look with different
 image adapters and style presets.
 
-**All images are local SVG placeholders — no external image APIs are called.**
+**All default images are local SVG placeholders — no external image APIs are called.**
+**The `openai-image` adapter is opt-in only (`--allow-external-images` + `OPENAI_API_KEY`).**
 
 ---
 
@@ -191,13 +192,43 @@ outputs/gallery_clean/
 
 ---
 
+### openai-image (experimental, opt-in)
+
+The `openai-image` adapter calls the OpenAI Images API (DALL-E) to generate
+real images. It is **fail-closed by default** — requires explicit opt-in:
+
+```bash
+# 1. Set API key (NEVER commit to git)
+export OPENAI_API_KEY="sk-..."
+
+# 2. Run with openai-image adapter
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/gallery_openai_image \
+  --image-adapter openai-image \
+  --allow-external-images
+```
+
+**Safety:**
+- Default: fail-closed (no `--allow-external-images` = no API call)
+- API key is NEVER printed, logged, or written to any file
+- Image prompts are NOT written to logs
+- Manifest (`image_manifest.json`) discloses `uses_external_api: true`
+- CI uses mock transport — zero real API calls
+
+Output: `outputs/gallery_openai_image/images/*.png` (real images), `cards.html`, `cards.md`, `image_manifest.json`
+
+---
+
 ## Safety Notes
 
-- **No external image APIs** — All images are local SVG renderers.
+- **Default: no external image APIs** — All default adapters (`placeholder`, `fixture`) are local SVG renderers.
+- **`openai-image` is opt-in only** — requires `--allow-external-images` + `OPENAI_API_KEY`.
 - **No document upload** — Source text stays on your machine.
-- **No API keys required** — Both `placeholder` and `fixture` are fully offline.
-- **No real AI image generation** — All SVGs are deterministic templates.
+- **No API keys required for default adapters** — `placeholder` and `fixture` are fully offline.
+- **Real image generation requires opt-in** — `openai-image` adapter calls OpenAI DALL-E API only when explicitly enabled.
 - **Outputs are not committed** — The `outputs/` directory is in `.gitignore`.
+- **Manifest transparency** — `image_manifest.json` always discloses `uses_external_api` and `requires_api_key`.
 
 ---
 

@@ -197,8 +197,23 @@
 - [ ] Abstract image generation interface
 - [ ] DALL-E adapter
 - [ ] Stable Diffusion adapter (local or API)
-- [ ] Replace SVG placeholders with real generated images
-- [ ] Image caching to avoid re-generation
+- [ ] Replace SVG placeholders with real generated images (future)
+- [ ] Image caching to avoid re-generation (future)
+
+## Phase 4C: OpenAI Image Adapter (Opt-in)
+
+**Experimental (opt-in) — code complete, fail-closed by default.**
+
+- [x] `openai-image` adapter (fail-closed, opt-in via `--allow-external-images`)
+- [x] `openai_image_transport.py` — HTTP transport using `urllib.request`
+- [x] Mock transport (`run_mock_openai_image_transport`)
+- [x] CLI `--allow-external-images` flag
+- [x] Manifest disclosure (`uses_external_api: true`)
+- [x] Doctor shows `openai-image: experimental`
+- [x] Phase 4C release audit checks
+- [x] CI fail-closed checks for openai-image
+- [ ] Image caching to avoid re-generation (future)
+- [ ] Progress callback for image download (future)
 
 ## Phase 5: Web UI
 

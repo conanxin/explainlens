@@ -47,6 +47,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No external image APIs are called.
 - `image_manifest.json` discloses `uses_external_api: false`.
 
+### Added (Phase 4C)
+- `openai-image` image adapter (experimental, opt-in, fail-closed).
+- `openai_image_transport.py` -- HTTP transport using `urllib.request`.
+- `--allow-external-images` CLI flag for image adapter opt-in.
+- Mock transport (`run_mock_openai_image_transport`) for CI/testing.
+- Transport injection point (`_call_transport`) for mock testing.
+- Updated `--image-adapter` choices to include `openai-image`.
+- Doctor command shows `openai-image` status.
+
+### Security (Phase 4C)
+- `openai-image` adapter is fail-closed by default.
+- Requires `--allow-external-images` flag + `OPENAI_API_KEY`.
+- API key is NEVER printed, logged, or written to any file.
+- Image prompts are NOT written to logs.
+- Transport is mock-injectable -- zero real API calls in CI.
+- `image_manifest.json` sets `uses_external_api: true` and `requires_api_key: true`.
+- Error messages are sanitized -- no API key or prompt in errors.
+
 ---
 
 ## [v0.2.0-alpha] - 2026-06-06

@@ -703,3 +703,72 @@ examples/configs/
 - 理解 expected JSON 结构
 
 详见 [Local Providers Guide](LOCAL_PROVIDERS.md)。
+
+---
+
+## 什么是 openai-image adapter？
+
+`openai-image` 是一个**实验性**图片生成适配器，调用 OpenAI DALL-E API 生成真实图片。
+
+**当前状态**：experimental（体验阶段）。
+
+**安全设计**（follow OpenAI provider 的 fail-closed 模式）：
+1. **默认关闭** — `allow_external_images = False`
+2. **需要显式 opt-in** — 传递 `--allow-external-images` 并设置 `OPENAI_API_KEY`
+3. **API key 永不打印、记录或写入任何文件**
+4. **图片 prompt 不写入日志**
+5. **Transport 可 mock 注入** — CI 和测试使用 mock transport，零真实 API 调用
+
+---
+
+## 如何启用 openai-image 图片生成？
+
+**前提条件**：
+1. 设置环境变量 `OPENAI_API_KEY="sk-..."`
+2. 传递 `--allow-external-images` 标志
+3. 选择 `--image-adapter openai-image`
+
+```bash
+# 设置 API key（不要提交到版本控制）
+export OPENAI_API_KEY="sk-..."
+
+# 运行 openai-image adapter
+python -m explainlens.cli analyze \
+  --input examples/sample_article.txt \
+  --output outputs/openai_image_demo \
+  --image-adapter openai-image \
+  --allow-external-images
+```
+
+**重要**：
+- 无 `--allow-external-images` 时 fail-closed：不会创建任何输出文件
+- 无 `OPENAI_API_KEY` 时 fail-closed：不会发送任何请求
+- 所有 测试都使用 mock transport — CI 不调用真实 API
+
+---
+
+## openai-image 安全吗？
+
+**默认安全**。不设 `--allow-external-images` 就不会调用任何外部 API。
+
+安全保障：
+1. **默认 fail-closed** — 不显式 opt-in 就不会调用 API
+2. **API key 受保护** — 仅从 `os.environ` 读取，永不缓存，永不记录
+3. **Prompt 不泄漏** — 图片 prompt 不写入日志、stdout 或文件
+4. **Transport 可 mock** — 所有 CI 测试使用 mock transport
+5. **Manifest 透明** — `image_manifest.json` 始终披露 `uses_external_api: true`
+6. **错误不泄漏数据** — 错误消息经过净化，不含 API key 或 prompt
+
+---
+
+## openai-image 生成的是真实图片吗？
+
+**是的**——当您显式启用时。`openai-image` 调用 OpenAI DALL-E API 生成真实图片。
+
+但默认情况下（无 `--allow-external-images`），它**不会**生成真实图片，而是 fail-closed 并报错。
+
+如果您不想使用真实图片生成：
+- 使用默认 `placeholder` adapter（本地 SVG 占位图）
+- 或使用 `fixture` adapter（确定性 SVG，用于测试）
+
+---

@@ -68,6 +68,51 @@ When future phases add real image generation API support:
    - `image_manifest.json` discloses `style`, `generated_locally`, and `external_image_api`.
    - Every image record includes `safety_notes` confirming local-only generation.
 
+### OpenAI Images Adapter (`openai-image`) — Phase 4C
+
+**Status:** experimental — opt-in only.
+
+**Fail-closed pattern (matches OpenAI provider):**
+
+1. **`allow_external_images` flag** — defaults to `False`.
+   - Set via `--allow-external-images` CLI flag.
+   - Adapter constructor sets `self.allow_external_images = False`.
+   - Every `generate_images()` call runs `_check_fail_closed()`.
+
+2. **API key validation** — `OPENAI_API_KEY` from `os.environ` only.
+   - Key is NEVER printed, logged, or written to any file.
+   - Key is validated for format (`sk-` or `ssk-` prefix) before any network call.
+   - Key is set inside `urllib.request.Request` headers ONLY — never stored in adapter state.
+
+3. **No prompt logging.**
+   - Image prompts are NOT written to logs, stdout, or files.
+   - `image_manifest.json` stores only a short prompt preview (first 120 chars).
+   - Source excerpts are NEVER sent to the image API.
+
+4. **Transport is mock-injectable.**
+   - `OpenAIImageAdapter._call_transport` is the injection point.
+   - CI and tests replace it with `run_mock_openai_image_transport()`.
+   - Mock transport returns a placeholder SVG with "NO real API call was made" note.
+
+5. **Manifest disclosure.**
+   - `image_manifest.json` sets `uses_external_api: true` and `requires_api_key: true`.
+   - `adapter_notes` includes the model name and endpoint.
+   - `safety_notes` on each image record confirms "External API call was made".
+
+6. **Error handling.**
+   - On API failure, a placeholder SVG is generated (no crash).
+   - Error messages are sanitized — no API key or prompt in error text.
+   - Network errors are caught and reported without sensitive data.
+
+**Safety guarantees:**
+
+1. **Default is safe.** Without `--allow-external-images`, all image generation fails closed with a clear error message.
+2. **API key is protected.** Read from `os.environ` only, never cached, never logged.
+3. **Prompts are clean.** No secrets, no source excerpts, no API keys in prompts.
+4. **Transport is mockable.** All CI tests use mock transport — zero real API calls.
+5. **Manifest is transparent.** `image_manifest.json` always discloses external API usage.
+6. **Errors don't leak data.** Sanitized error messages only.
+
 5. **No real images.**
    - Phase 4B does NOT call DALL-E, Stable Diffusion, or any other image generation API.
    - Generated SVGs are educational illustrations — no photorealistic content.

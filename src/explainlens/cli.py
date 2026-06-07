@@ -193,6 +193,11 @@ def cmd_analyze(args: argparse.Namespace) -> int:
             return 1
         try:
             img_adapter = get_image_adapter(image_adapter_name)
+            # Propagate --allow-external-images flag to the adapter
+            if hasattr(img_adapter, "allow_external_images"):
+                img_adapter.allow_external_images = getattr(
+                    args, "allow_external_images", False
+                )
             print(f"   -> Image adapter: {img_adapter.name} ({img_adapter.version})")
             print(f"   -> Image style: {img_style_obj.name}")
             write_image_jobs(
@@ -213,7 +218,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
                 uses_external_api=img_adapter.uses_external_api,
                 requires_api_key=img_adapter.requires_api_key,
             )
-        except ValueError as e:
+        except (ValueError, RuntimeError) as e:
             print(f"Image adapter error: {e}", file=sys.stderr)
             return 1
 
@@ -527,8 +532,8 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     print("\nImage generation:")
     print("  - Default adapter: placeholder")
-    print("  - External image APIs: disabled")
-    print("  - Real image generation: not implemented")
+    print("  - External image APIs: disabled (opt-in via --allow-external-images)")
+    print("  - OpenAI Images API: experimental (requires --allow-external-images + OPENAI_API_KEY)")
 
     # Image styles
     print("\nImage styles:")
@@ -723,13 +728,19 @@ def main() -> None:
     analyze_parser.add_argument(
         "--image-adapter",
         default="placeholder",
-        choices=["placeholder", "fixture"],
+        choices=["placeholder", "fixture", "openai-image"],
         help="Image adapter for card illustrations (default: placeholder)",
     )
     analyze_parser.add_argument(
         "--image-style",
         default="clean-cartoon-explainer",
         help="Visual style for generated images (default: clean-cartoon-explainer)",
+    )
+    analyze_parser.add_argument(
+        "--allow-external-images",
+        action="store_true",
+        default=False,
+        help="Allow calling external image APIs (required for openai-image adapter)",
     )
     analyze_parser.add_argument(
         "--skip-images",

@@ -5,10 +5,12 @@ from __future__ import annotations
 from explainlens.images.base import ImageAdapter
 from explainlens.images.placeholder import PlaceholderImageAdapter
 from explainlens.images.fixture import FixtureImageAdapter
+from explainlens.images.openai_image import OpenAIImageAdapter
 
 AVAILABLE_IMAGE_ADAPTERS: dict[str, type[ImageAdapter]] = {
     "placeholder": PlaceholderImageAdapter,
     "fixture": FixtureImageAdapter,
+    "openai-image": OpenAIImageAdapter,
 }
 
 

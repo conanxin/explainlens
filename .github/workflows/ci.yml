@@ -198,6 +198,23 @@ jobs:
           grep -q '"external_image_api": false' outputs/ci_image_storybook/image_manifest.json
           grep -q "Image Manifest" outputs/ci_image_storybook/cards.html
 
+      - name: Smoke test openai-image adapter (fail-closed -- no flag)
+        run: |
+          ! python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_openai_image_closed \
+            --image-adapter openai-image
+          test ! -d outputs/ci_openai_image_closed
+
+      - name: Smoke test openai-image adapter (fail-closed -- no key)
+        run: |
+          OPENAI_API_KEY="" ! python -m explainlens.cli analyze \
+            --input examples/sample_article.txt \
+            --output outputs/ci_openai_image_nokey \
+            --image-adapter openai-image \
+            --allow-external-images
+          test ! -d outputs/ci_openai_image_nokey
+
       - name: Smoke test image adapter (skip)
         run: |
           python -m explainlens.cli analyze \

@@ -198,12 +198,14 @@ python -m explainlens.cli analyze \
 
 Current image adapters:
 
-| Adapter     | Status       | External API | API key required |
-| ----------- | ------------ | ------------ | ---------------- |
-| placeholder | available    | no           | no               |
-| fixture     | experimental | no           | no               |
+| Adapter      | Status       | External API | API key required |
+| ------------ | ------------ | ------------ | ----------------- |
+| placeholder  | available    | no           | no                |
+| fixture      | experimental | no           | no                |
+| openai-image | experimental | yes          | yes (opt-in)     |
 
-Real image generation is not enabled yet.
+Real image generation is experimental — `openai-image` adapter requires
+`--allow-external-images` and `OPENAI_API_KEY`.
 
 ## 输出文件
 
