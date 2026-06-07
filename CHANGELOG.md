@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [v0.3.0-alpha] - 2026-06-07
+
 ### Added
 - Image style presets (`clean-cartoon-explainer`, `whiteboard`, `storybook`, `technical-diagram`).
 - `image-styles` CLI command.

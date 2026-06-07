@@ -126,9 +126,9 @@ def main() -> int:
     all_pass &= check("pyproject.toml has correct name",
                       file_contains("pyproject.toml", r'name\s*=\s*"explainlens"'),
                       "project name must be 'explainlens'")
-    all_pass &= check("pyproject.toml has version 0.2.0a0",
-                      file_contains("pyproject.toml", r'version\s*=\s*"0\.2\.0a0"'),
-                      "version must be 0.2.0a0 for v0.2.0-alpha release")
+    all_pass &= check("pyproject.toml has version 0.3.0a0",
+                      file_contains("pyproject.toml", r'version\s*=\s*"0\.3\.0a0"'),
+                      "version must be 0.3.0a0 for v0.3.0-alpha release")
     all_pass &= check(".gitignore exists", file_exists(".gitignore"))
     all_pass &= check(".gitignore covers .env",
                       file_contains(".gitignore", r"\.env"))

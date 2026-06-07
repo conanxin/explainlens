@@ -171,7 +171,7 @@
 
 ## Phase 4B: Visual Polish & Export Quality
 
-**In Progress**
+**Complete**
 
 - [x] Image style presets (`clean-cartoon-explainer`, `whiteboard`, `storybook`, `technical-diagram`)
 - [x] `image-styles` CLI command
@@ -190,19 +190,9 @@
 - Pure visual polish and export quality
 - All images remain local SVG renderers
 
-## Phase 4: Real Image Generation Adapter
-
-**Planned**
-
-- [ ] Abstract image generation interface
-- [ ] DALL-E adapter
-- [ ] Stable Diffusion adapter (local or API)
-- [ ] Replace SVG placeholders with real generated images (future)
-- [ ] Image caching to avoid re-generation (future)
-
 ## Phase 4C: OpenAI Image Adapter (Opt-in)
 
-**Experimental (opt-in) — code complete, fail-closed by default.**
+**Complete (experimental opt-in)**
 
 - [x] `openai-image` adapter (fail-closed, opt-in via `--allow-external-images`)
 - [x] `openai_image_transport.py` — HTTP transport using `urllib.request`
@@ -214,6 +204,25 @@
 - [x] CI fail-closed checks for openai-image
 - [ ] Image caching to avoid re-generation (future)
 - [ ] Progress callback for image download (future)
+
+## Phase 4D: Release Hardening + v0.3.0-alpha Preparation
+
+**Complete**
+
+- [x] Update version to `0.3.0a0` in `pyproject.toml`
+- [x] Create release notes: `docs/releases/v0.3.0-alpha.md`
+- [x] Update `CHANGELOG.md` — archive `[Unreleased]` to `[v0.3.0-alpha]`
+- [x] Update `docs/ROADMAP.md` — mark Phase 4A/4B/4C as complete
+- [x] Run `release_audit.py` — all checks pass
+- [x] Run `prepare_release.py` — verify version mapping
+- [x] Update `README.md` — version, features, safety notes
+- [x] Document consistency pass (all `.md` files)
+- [x] CI verification — all smoke tests pass
+- [x] Full local validation (pytest + smoke + audit)
+- [ ] Create `v0.3.0-alpha` tag (future, after user confirmation)
+- [ ] Create GitHub Release (future, after user confirmation)
+
+---
 
 ## Phase 5: Web UI
 

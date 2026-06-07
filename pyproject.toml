@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "explainlens"
-version = "0.2.0a0"
+version = "0.3.0a0"
 description = "Turn papers and complex texts into visual explainer cards and cartoon storyboards."
 readme = "README.md"
 license = { text = "MIT" }
