@@ -179,6 +179,9 @@ def create_app() -> FastAPI:
         if content is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
 
+        # Use only the base filename (not nested path) in Content-Disposition
+        base_name = Path(filename).name
+
         # Inline rendering for text-based artifacts
         if mime and "json" in mime:
             # Pretty-print JSON
@@ -188,15 +191,18 @@ def create_app() -> FastAPI:
                 return Response(
                     content=pretty,
                     media_type="application/json",
-                    headers={"Content-Disposition": f"inline; filename={filename}"},
                 )
             except (json.JSONDecodeError, UnicodeDecodeError):
                 pass
 
+        # Serve images/HTML without Content-Disposition (standard inline rendering)
+        if mime and (mime.startswith("image/") or mime.startswith("text/html")):
+            return Response(content=content, media_type=mime)
+
         return Response(
             content=content,
             media_type=mime or "application/octet-stream",
-            headers={"Content-Disposition": f"inline; filename={filename}"},
+            headers={"Content-Disposition": f"inline; filename={base_name}"},
         )
 
     @app.get("/api/artifacts/{run_id}")

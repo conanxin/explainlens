@@ -130,12 +130,13 @@ def read_artifact(run_id: str, filename: str) -> tuple[bytes | None, str | None]
 
 
 def list_artifacts(run_id: str) -> list[dict[str, Any]]:
-    """List all artifact files in a run directory."""
+    """List all artifact files in a run directory, including images/ subdirectory."""
     run_dir = OUTPUTS_DIR / run_id
     if not run_dir.exists():
         return []
 
     artifacts: list[dict[str, Any]] = []
+    # Top-level files
     for f in sorted(run_dir.iterdir()):
         if f.is_file():
             size = f.stat().st_size
@@ -144,6 +145,18 @@ def list_artifacts(run_id: str) -> list[dict[str, Any]]:
                 "size": size,
                 "size_human": _format_size(size),
             })
+
+    # Recurse into images/ subdirectory
+    images_dir = run_dir / "images"
+    if images_dir.is_dir():
+        for f in sorted(images_dir.iterdir()):
+            if f.is_file():
+                size = f.stat().st_size
+                artifacts.append({
+                    "name": f"images/{f.name}",
+                    "size": size,
+                    "size_human": _format_size(size),
+                })
 
     return artifacts
 
